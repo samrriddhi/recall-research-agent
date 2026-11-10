@@ -13,6 +13,7 @@ import { searchWeb, type WebSearchResult } from "../research/web-search.js";
 import { classifyIntent } from "./intent.js";
 import { ollamaChat, type OllamaMessage } from "./ollama-client.js";
 import { formatMemoryContext, SYSTEM_PROMPT } from "./prompts.js";
+import { planSearchQuery } from "./search-planner.js";
 
 const searchArgumentsSchema = z.object({
   query: z.string().min(2).max(300)
@@ -182,16 +183,7 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
   // Carry names from retrieved history into fallback searches when the user refers to them indirectly.
   if (intent.shouldSearch && sources.length === 0) {
     try {
-      const historicalContext = memory
-        .slice(0, 3)
-        .map((item) => item.content.replace(/https?:\/\/\S+/g, ""))
-        .join(" ")
-        .replace(/\s+/g, " ")
-        .slice(0, 180);
-      const fallbackQuery = (historicalContext + " " + input.content)
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 300);
+      const fallbackQuery = planSearchQuery(input.content, memory);
       const fallbackResults = await searchWeb(fallbackQuery);
       sources.push(...fallbackResults);
       messages.push({

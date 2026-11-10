@@ -378,7 +378,7 @@ function App() {
                   </button>
                 </div>
               </form>
-              <div className="composer-disclaimer">Recall can make mistakes. Check source links for important decisions.</div>
+              <div className="composer-disclaimer">Chat history stays local; search queries go to DuckDuckGo. Check sources for important decisions.</div>
             </div>
           </div>
         </div>

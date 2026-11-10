@@ -63,7 +63,8 @@ Ollama must be running in the background. If it is not running, start it with: o
 - Model inference happens on your machine.
 - Conversation data is stored in ./data/recall.sqlite.
 - No API keys or paid search plans are configured.
-- Web searches request DuckDuckGo's public search pages. Public search can be throttled or change markup; Recall reports provider failures instead of silently switching to a paid service.
+- Only the search query is sent to DuckDuckGo's public search pages; conversation history and model inference stay local. When a follow-up refers to a shortlist, Recall's fallback planner sends extracted product names and research terms, not whole historical messages.
+- Public search can be throttled or change markup; Recall reports provider failures instead of silently switching to a paid service.
 - No hosted model receives conversation history.
 
 ## Scope and limitations
