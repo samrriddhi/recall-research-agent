@@ -122,8 +122,14 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
     }).filter((item) => item.id !== userMessage.id);
   }
 
-  if (intent.historicalRecall && memory.length === 0 && !dateWindow) {
-    memory = getRecentHistory(12).filter((item) => item.id !== userMessage.id);
+  const refersToUnresolvedContext =
+    /\b(any of them|them|those|these|the ones|those tools|the shortlist|that shortlist|the providers|same tools|same providers)\b/i.test(input.content);
+  if (
+    memory.length === 0
+    && !dateWindow
+    && (intent.historicalRecall || (intent.comparison && refersToUnresolvedContext))
+  ) {
+    memory = getRecentHistory(24).filter((item) => item.id !== userMessage.id);
   }
 
   const recent = getRecentMessages(conversation.id, 12);
