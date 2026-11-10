@@ -241,13 +241,13 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
   if (queriesToRun.length > 0) {
     const uniqueSources = deduplicateSources(sources);
     const partialFailureNote = searchFailures.length > 0
-        searchFailures.join("\n") +
+      ? "\nSome search requests failed; do not treat missing entities as unchanged:\n" + searchFailures.join("\n")
       : "";
     const evidence = uniqueSources.length > 0
       ? "FINAL SEARCH EVIDENCE. Use this numbered source list for all citations; do not reuse numbering from earlier tool messages:\n\n" +
         renderSearchContext(uniqueSources) + partialFailureNote
       : "Web search was attempted but no usable source was returned. " +
-        searchFailures.join("\\n") +
+        searchFailures.join("\n") +
         "\nDo not claim the answer is current or verified.";
 
     messages.push({ role: "system", content: evidence });
