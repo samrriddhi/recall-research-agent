@@ -51,8 +51,8 @@ describe("resolveDateWindow", () => {
       "2026-11-10T15:00:00.000Z",
       "Asia/Kolkata"
     );
-    expect(result?.from).toBe("2026-11-13T18:30:00.000Z");
-    expect(result?.to).toBe("2026-11-14T18:30:00.000Z");
+    expect(result?.from).toBe("2026-11-12T18:30:00.000Z");
+    expect(result?.to).toBe("2026-11-13T18:30:00.000Z");
   });
 
   it("prefers an explicit calendar date over a weekday mention", () => {

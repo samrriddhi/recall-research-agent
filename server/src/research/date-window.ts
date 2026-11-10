@@ -95,7 +95,7 @@ function resolveWeekday(
   const weekdayPattern = /\b(?:(last|previous)\s+)?(on\s+|this\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
   // An explicit calendar date is more precise than a weekday mentioned
   // alongside it ("Monday, 3 November 2025").
-  if (/\\b\\d{1,2}\\s+[a-z]+\\b|\\b[a-z]+\\s+\\d{1,2}(?:,?\\s+\\d{4})?\\b/i.test(query)) {
+  if (/\b\d{1,2}\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b|\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}(?:,?\s+\d{4})?\b|\b\d{4}-\d{2}-\d{2}\b/i.test(query)) {
     return undefined;
   }
 
