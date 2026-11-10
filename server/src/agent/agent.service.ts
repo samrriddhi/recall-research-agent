@@ -5,6 +5,7 @@ import {
   createConversation,
   getRecentHistory,
   getRecentMessages,
+  getRecentShortlistContext,
   searchRelevantMessages,
   type MessageRecord
 } from "../memory/memory.service.js";
@@ -107,11 +108,22 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
     ? input.content.replace(dateWindow.matchedText, "")
     : input.content;
 
+  const refersToUnresolvedContext =
+    /\\b(any of them|them|those|these|the ones|those tools|the shortlist|that shortlist|the providers|same tools|same providers)\\b/i.test(input.content);
+
   let memory = searchRelevantMessages(memoryQuery, {
     from: dateWindow?.from,
     to: dateWindow?.to,
     limit: dateWindow ? 24 : 8
   }).filter((item) => item.id !== userMessage.id);
+
+  // Prefer task-shaped shortlist memory over lexical matches such as an
+  // unrelated earlier message that happens to contain the word "pricing".
+  if (intent.comparison && refersToUnresolvedContext && !dateWindow) {
+    const shortlistContext = getRecentShortlistContext(2, 8)
+      .filter((item) => item.id !== userMessage.id);
+    if (shortlistContext.length > 0) memory = shortlistContext;
+  }
 
   // If the wording of the question does not lexically match the old message,
   // keep the date boundary but retrieve that day's conversation as a fallback.
@@ -123,8 +135,6 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
     }).filter((item) => item.id !== userMessage.id);
   }
 
-  const refersToUnresolvedContext =
-    /\b(any of them|them|those|these|the ones|those tools|the shortlist|that shortlist|the providers|same tools|same providers)\b/i.test(input.content);
   if (
     memory.length === 0
     && !dateWindow

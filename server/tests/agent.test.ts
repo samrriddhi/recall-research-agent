@@ -30,6 +30,10 @@ describe("agent memory-to-search orchestration", () => {
       "user",
       "We shortlisted HubSpot, Salesforce, and Pipedrive for a 20-person sales team."
     );
+    addMessage(conversation.id, "assistant", "The shortlist included HubSpot, Salesforce, and Pipedrive.");
+
+    const unrelated = createConversation("Unrelated prices");
+    addMessage(unrelated.id, "user", "A mobile carrier changed its monthly prices last week.");
 
     mocks.ollamaChat.mockResolvedValue({
       message: { role: "assistant", content: "I will compare the current product updates." }

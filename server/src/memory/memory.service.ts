@@ -170,6 +170,40 @@ function buildFtsExpression(query: string): string {
   return terms.map((term) => '"' + term.replaceAll('"', '""') + '"').join(" OR ");
 }
 
+/**
+ * Retrieve recent conversations whose user-authored messages describe a
+ * shortlist. A pronoun-only follow-up ("have any of them changed?") has no
+ * lexical overlap with product names, so it needs a task-shaped memory query.
+ */
+export function getRecentShortlistContext(
+  conversationLimit = 2,
+  messagesPerConversation = 8
+): MessageRecord[] {
+  const expression = buildFtsExpression("shortlist shortlisted shortlisting short-list");
+  if (!expression) return [];
+
+  const conversations = db.prepare(`
+    SELECT m.conversation_id, MAX(m.created_at) AS matched_at
+    FROM messages_fts
+    JOIN messages m ON m.rowid = messages_fts.rowid
+    WHERE messages_fts MATCH ? AND m.role = 'user'
+    GROUP BY m.conversation_id
+    ORDER BY matched_at DESC
+    LIMIT ?
+  `).all(expression, conversationLimit) as Array<{ conversation_id: string }>;
+
+  const selectConversationMessages = db.prepare(MESSAGE_SELECT + `
+    WHERE conversation_id = ?
+    ORDER BY created_at DESC LIMIT ?
+  `);
+
+  return conversations.flatMap(({ conversation_id }) => {
+    const rows = selectConversationMessages
+      .all(conversation_id, messagesPerConversation) as DbMessage[];
+    return rows.reverse().map(mapMessage);
+  });
+}
+
 export function searchRelevantMessages(
   query: string,
   options: { from?: string; to?: string; limit?: number } = {}

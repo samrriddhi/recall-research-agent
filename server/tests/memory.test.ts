@@ -3,6 +3,7 @@ import {
   addMessage,
   createConversation,
   getConversationMessages,
+  getRecentShortlistContext,
   listConversations,
   searchRelevantMessages
 } from "../src/memory/memory.service.js";
@@ -59,6 +60,20 @@ describe("conversation memory", () => {
     expect(matches.length).toBeGreaterThan(0);
     expect(matches.some((message) => message.conversationId === first.id)).toBe(true);
     expect(matches.some((message) => message.conversationId === second.id)).toBe(false);
+  });
+
+  it("retrieves shortlist conversations instead of unrelated price discussions", () => {
+    const shortlist = createConversation("CRM shortlist");
+    addMessage(shortlist.id, "user", "We shortlisted HubSpot, Salesforce, and Pipedrive.");
+    addMessage(shortlist.id, "assistant", "The five shortlisted CRM products are recorded.");
+
+    const unrelated = createConversation("Pricing question");
+    addMessage(unrelated.id, "user", "I asked whether a mobile plan changed its monthly prices.");
+
+    const matches = getRecentShortlistContext(2, 8);
+    expect(matches.length).toBe(2);
+    expect(matches.every((message) => message.conversationId === shortlist.id)).toBe(true);
+    expect(matches.some((message) => message.content.includes("HubSpot"))).toBe(true);
   });
 
   it("retrieves all messages within a date window when no lexical query is supplied", () => {
