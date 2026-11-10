@@ -210,19 +210,24 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
   const searchFailures: string[] = [];
   for (let index = 0; index < queriesToRun.length; index += 2) {
     const batch = queriesToRun.slice(index, index + 2);
-    const outcomes = await Promise.all(batch.map(async (query) => {
+    type SearchOutcome =
+      | { query: string; ok: true; results: WebSearchResult[] }
+      | { query: string; ok: false; error: string };
+
+    const outcomes: SearchOutcome[] = await Promise.all(batch.map(async (query): Promise<SearchOutcome> => {
       try {
-        return { query, results: await searchWeb(query, 4) };
+        return { query, ok: true, results: await searchWeb(query, 4) };
       } catch (error) {
         return {
           query,
+          ok: false,
           error: error instanceof Error ? error.message : "Search failed."
         };
       }
     }));
 
     for (const outcome of outcomes) {
-      if ("results" in outcome) {
+      if (outcome.ok) {
         sources.push(...outcome.results);
       } else {
         searchFailures.push(outcome.query + ": " + outcome.error);
