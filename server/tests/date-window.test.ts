@@ -4,14 +4,22 @@ import { resolveDateWindow } from "../src/research/date-window.js";
 describe("resolveDateWindow", () => {
   const referenceTime = "2026-11-10T15:00:00.000Z";
 
-  it("resolves an explicit calendar date", () => {
-    const result = resolveDateWindow("What did I ask you on 3 November?", referenceTime);
+  it("resolves an explicit date to the user's local calendar day", () => {
+    const result = resolveDateWindow(
+      "What did I ask you on 3 November?",
+      referenceTime,
+      "Asia/Kolkata"
+    );
     expect(result).toBeDefined();
-    expect(result?.from).toBe("2026-11-03T00:00:00.000Z");
-    expect(result?.to).toBe("2026-11-04T00:00:00.000Z");
+    expect(result?.from).toBe("2026-11-02T18:30:00.000Z");
+    expect(result?.to).toBe("2026-11-03T18:30:00.000Z");
   });
 
   it("returns undefined when no date is present", () => {
-    expect(resolveDateWindow("Tell me about PostgreSQL hosting", referenceTime)).toBeUndefined();
+    expect(resolveDateWindow(
+      "Tell me about PostgreSQL hosting",
+      referenceTime,
+      "Asia/Kolkata"
+    )).toBeUndefined();
   });
 });

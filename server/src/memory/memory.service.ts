@@ -103,21 +103,28 @@ function mapMessage(row: DbMessage): MessageRecord {
   };
 }
 
+const MESSAGE_SELECT = "SELECT id, conversation_id, role, content, created_at FROM messages";
+
 export function getConversationMessages(conversationId: string): MessageRecord[] {
-  const rows = db.prepare(`
-    SELECT id, conversation_id, role, content, created_at
-    FROM messages WHERE conversation_id = ?
+  const rows = db.prepare(MESSAGE_SELECT + `
+    WHERE conversation_id = ?
     ORDER BY created_at ASC LIMIT 500
   `).all(conversationId) as DbMessage[];
   return rows.map(mapMessage);
 }
 
 export function getRecentMessages(conversationId: string, limit = 12): MessageRecord[] {
-  const rows = db.prepare(`
-    SELECT id, conversation_id, role, content, created_at
-    FROM messages WHERE conversation_id = ?
+  const rows = db.prepare(MESSAGE_SELECT + `
+    WHERE conversation_id = ?
     ORDER BY created_at DESC LIMIT ?
   `).all(conversationId, limit) as DbMessage[];
+  return rows.reverse().map(mapMessage);
+}
+
+export function getRecentHistory(limit = 12): MessageRecord[] {
+  const rows = db.prepare(MESSAGE_SELECT + `
+    ORDER BY created_at DESC LIMIT ?
+  `).all(limit) as DbMessage[];
   return rows.reverse().map(mapMessage);
 }
 
@@ -126,7 +133,8 @@ function buildFtsExpression(query: string): string {
     "what", "when", "where", "which", "about", "have", "that", "this",
     "with", "from", "were", "there", "them", "they", "then", "than",
     "does", "did", "has", "had", "would", "could", "should", "your",
-    "you", "our", "last", "asked", "tell", "today", "since", "still"
+    "you", "our", "last", "asked", "tell", "today", "since", "still",
+    "on", "the", "and", "for"
   ]);
   const terms = [...new Set(
     (query.toLowerCase().match(/[a-z0-9]{3,}/g) ?? [])
@@ -141,10 +149,13 @@ export function searchRelevantMessages(
   options: { from?: string; to?: string; limit?: number } = {}
 ): MessageRecord[] {
   const expression = buildFtsExpression(query);
-  if (!expression) return [];
+  const clauses: string[] = [];
+  const params: Array<string | number> = [];
 
-  const clauses = ["messages_fts MATCH ?"];
-  const params: Array<string | number> = [expression];
+  if (expression) {
+    clauses.push("messages_fts MATCH ?");
+    params.push(expression);
+  }
   if (options.from) {
     clauses.push("m.created_at >= ?");
     params.push(options.from);
@@ -153,16 +164,27 @@ export function searchRelevantMessages(
     clauses.push("m.created_at < ?");
     params.push(options.to);
   }
-  params.push(options.limit ?? 8);
 
-  const rows = db.prepare(`
-    SELECT m.id, m.conversation_id, m.role, m.content, m.created_at
-    FROM messages_fts
-    JOIN messages m ON m.rowid = messages_fts.rowid
-    WHERE ${clauses.join(" AND ")}
-    ORDER BY bm25(messages_fts), m.created_at DESC
-    LIMIT ?
-  `).all(...params) as DbMessage[];
+  if (clauses.length === 0) return [];
 
+  const querySql = expression
+    ? `
+      SELECT m.id, m.conversation_id, m.role, m.content, m.created_at
+      FROM messages_fts
+      JOIN messages m ON m.rowid = messages_fts.rowid
+      WHERE ${clauses.join(" AND ")}
+      ORDER BY bm25(messages_fts), m.created_at DESC
+      LIMIT ?
+    `
+    : `
+      SELECT m.id, m.conversation_id, m.role, m.content, m.created_at
+      FROM messages m
+      WHERE ${clauses.join(" AND ")}
+      ORDER BY m.created_at DESC
+      LIMIT ?
+    `;
+
+  params.push(options.limit ?? 12);
+  const rows = db.prepare(querySql).all(...params) as DbMessage[];
   return rows.map(mapMessage);
 }

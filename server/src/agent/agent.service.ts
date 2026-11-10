@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   addMessage,
   createConversation,
+  getRecentHistory,
   getRecentMessages,
   searchRelevantMessages,
   type MessageRecord
@@ -36,6 +37,7 @@ export interface ChatInput {
   conversationId?: string;
   content: string;
   referenceTime?: string;
+  timeZone?: string;
 }
 
 export interface ChatOutput {
@@ -48,11 +50,8 @@ export interface ChatOutput {
 
 function parseToolArguments(value: Record<string, unknown> | string): unknown {
   if (typeof value !== "string") return value;
-  try {
-    return JSON.parse(value) as unknown;
-  } catch {
-    return {};
-  }
+  try { return JSON.parse(value) as unknown; }
+  catch { return {}; }
 }
 
 function deduplicateSources(sources: WebSearchResult[]): WebSearchResult[] {
@@ -80,13 +79,25 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
 
   const userMessage = addMessage(conversation.id, "user", input.content);
   const intent = classifyIntent(input.content);
-  const dateWindow = resolveDateWindow(input.content, input.referenceTime);
+  const dateWindow = resolveDateWindow(
+    input.content,
+    input.referenceTime,
+    input.timeZone ?? "UTC"
+  );
 
-  const memory = searchRelevantMessages(input.content, {
+  const memoryQuery = dateWindow
+    ? input.content.replace(dateWindow.matchedText, "")
+    : input.content;
+
+  let memory = searchRelevantMessages(memoryQuery, {
     from: dateWindow?.from,
     to: dateWindow?.to,
-    limit: 8
+    limit: dateWindow ? 16 : 8
   }).filter((item) => item.id !== userMessage.id);
+
+  if (intent.historicalRecall && memory.length === 0 && !dateWindow) {
+    memory = getRecentHistory(12).filter((item) => item.id !== userMessage.id);
+  }
 
   const recent = getRecentMessages(conversation.id, 12);
   const historyMessages: OllamaMessage[] = recent.map((item) => ({

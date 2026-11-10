@@ -7,7 +7,8 @@ export const chatRouter = Router();
 const chatBodySchema = z.object({
   conversationId: z.string().uuid().optional(),
   content: z.string().trim().min(1).max(10000),
-  referenceTime: z.string().datetime().optional()
+  referenceTime: z.string().datetime().optional(),
+  timeZone: z.string().min(1).max(64).optional()
 });
 
 chatRouter.post("/", async (request, response, next) => {
