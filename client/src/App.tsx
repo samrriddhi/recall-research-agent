@@ -266,7 +266,7 @@ function App() {
         <div className="sidebar-footer">
           <div className="privacy-note">
             <div className="privacy-icon"><Check size={13} /></div>
-            <div><strong>Local conversation history</strong><span>Only search queries leave this device.</span></div>
+            <div><strong>Local model & history</strong><span>Searches and source-page requests go online.</span></div>
           </div>
           <div className="sidebar-version">RECALL · LOCAL EDITION</div>
         </div>
