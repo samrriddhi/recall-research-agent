@@ -70,7 +70,10 @@ function renderSearchContext(sources: WebSearchResult[]): string {
   return sources.slice(0, 8).map((source, index) =>
     "[" + (index + 1) + "] " + source.title +
     "\nURL: " + source.url +
-    "\nSnippet: " + source.snippet
+    "\nSnippet: " + source.snippet +
+    (source.publishedAt ? "\nPublished: " + source.publishedAt : "") +
+    (source.modifiedAt ? "\nPage modified: " + source.modifiedAt : "") +
+    (source.content ? "\nPage text:\n" + source.content.slice(0, 2500) : "")
   ).join("\n\n");
 }
 
@@ -238,14 +241,14 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
   if (queriesToRun.length > 0) {
     const uniqueSources = deduplicateSources(sources);
     const partialFailureNote = searchFailures.length > 0
-      ? "\\nSome search requests failed; do not treat missing entities as unchanged:\\n" + searchFailures.join("\\n")
+        searchFailures.join("\n") +
       : "";
     const evidence = uniqueSources.length > 0
-      ? "FINAL SEARCH EVIDENCE. Use this numbered source list for all citations; do not reuse numbering from earlier tool messages:\\n\\n" +
+      ? "FINAL SEARCH EVIDENCE. Use this numbered source list for all citations; do not reuse numbering from earlier tool messages:\n\n" +
         renderSearchContext(uniqueSources) + partialFailureNote
       : "Web search was attempted but no usable source was returned. " +
         searchFailures.join("\\n") +
-        "\\nDo not claim the answer is current or verified.";
+        "\nDo not claim the answer is current or verified.";
 
     messages.push({ role: "system", content: evidence });
     response = await ollamaChat(messages, []);
