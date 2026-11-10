@@ -57,6 +57,7 @@ Ollama must be running in the background. If it is not running, start it with: o
 | npm run dev | Start API and UI |
 | npm run build | Type-check and build both applications |
 | npm test | Run automated tests |
+| npm run evaluate | Run deterministic recall, date and search-planning evaluation |
 
 ## Cost and privacy
 
@@ -65,6 +66,7 @@ Ollama must be running in the background. If it is not running, start it with: o
 - No API keys or paid search plans are configured.
 - Only the search query is sent to DuckDuckGo's public search pages; conversation history and model inference stay local. When a follow-up refers to a shortlist, Recall's fallback planner sends extracted product names and research terms, not whole historical messages.
 - Public search can be throttled or change markup; Recall reports provider failures instead of silently switching to a paid service.
+- When an older conversation contains a shortlist, the comparison planner issues separate bounded searches for each recovered entity so one broad search does not hide the rest of the list.
 - No hosted model receives conversation history.
 
 ## Scope and limitations

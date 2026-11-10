@@ -8,7 +8,7 @@ The challenge is not ordinary text generation. The agent must retrieve what was 
 
 Recall is a local-first TypeScript application. React handles chat and history. Express exposes a narrow HTTP API. SQLite stores conversations, messages and source snapshots attached to assistant responses. FTS5 retrieves relevant prior messages; explicit dates are resolved before retrieval so "on 3 November" narrows the search to that day.
 
-The agent orchestrator classifies the request, retrieves historical context, and calls a local Ollama model. The model has one callable tool: web_search. A deterministic fallback invokes the same tool when a request clearly asks for current information but the small model declines to call it. Search results are returned with URLs and snippets; answers must cite only supplied sources.
+The agent orchestrator classifies the request, retrieves historical context, resolves calendar dates in the user's IANA timezone, and calls a local Ollama model. The model has one callable tool: web_search. A deterministic fallback invokes the same tool when a request clearly asks for current information but the small model declines to call it. For follow-ups about a previous shortlist, a bounded query planner issues separate searches for recovered entities. The final synthesis receives a single stable, numbered evidence list so citations map to the displayed sources.
 
 ## Why this design
 
@@ -31,8 +31,8 @@ The no-key search adapter parses DuckDuckGo's public HTML and Lite pages. These 
 
 ## Evaluation
 
-Deterministic tests cover intent classification, date resolution and search-result parsing. Before submission, add benchmark conversations for historical recall, ambiguous dates, missing history, same-price comparisons, plan mismatches, conflicting sources and failed search. Track date-window accuracy, retrieval recall, citation coverage and unsupported-claim rate.
+The CI pipeline runs unit and HTTP integration tests, a deterministic evaluation dataset for date resolution, intent classification and shortlist query planning, a dependency audit, and a production build. These checks do not claim to measure local-model answer quality. Live evaluation remains manual and should cover historical recall, missing baselines, plan/billing/region mismatches, conflicting sources and search outages. Track date-window accuracy, retrieval recall, per-entity search coverage, citation coverage and unsupported-claim rate.
 
 ## With another week
 
-Add a labeled evaluation corpus and measure retrieval quality; add local semantic retrieval only if FTS5 misses paraphrases; fetch and normalize official pricing pages with source snapshots; improve source freshness extraction; and test model/tool behavior on the target laptop. Any deployment remains optional and must not introduce unannounced paid dependencies.
+Grow the labeled evaluation corpus with real conversations and graded expected evidence; add local semantic retrieval only if FTS5 misses paraphrases; fetch and normalize first-party pricing/release pages with source snapshots; improve publication and effective-date extraction; and test model/tool behavior on the target laptop. Any deployment remains optional and must not introduce unannounced paid dependencies.

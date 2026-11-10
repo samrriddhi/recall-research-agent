@@ -141,6 +141,7 @@ function App() {
   function selectConversation(id: string) {
     if (loading) return;
     setError("");
+    setMessages([]);
     setActiveId(id);
   }
 

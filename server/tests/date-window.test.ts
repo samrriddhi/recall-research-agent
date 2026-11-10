@@ -55,6 +55,16 @@ describe("resolveDateWindow", () => {
     expect(result?.to).toBe("2026-11-09T18:30:00.000Z");
   });
 
+  it("uses the correct 23-hour local day when daylight saving starts", () => {
+    const result = resolveDateWindow(
+      "What did we discuss on March 8, 2026?",
+      "2026-03-10T12:00:00.000Z",
+      "America/New_York"
+    );
+    expect(result?.from).toBe("2026-03-08T05:00:00.000Z");
+    expect(result?.to).toBe("2026-03-09T04:00:00.000Z");
+  });
+
   it("returns undefined when no date is present", () => {
     expect(resolveDateWindow(
       "Tell me about PostgreSQL hosting",

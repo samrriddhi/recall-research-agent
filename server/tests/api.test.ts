@@ -67,6 +67,21 @@ describe("HTTP API", () => {
     expect(payload.error).toBe("Invalid chat request.");
   });
 
+  it("rejects chat requests for a conversation that does not exist", async () => {
+    const response = await fetch(baseUrl + "/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        conversationId: "00000000-0000-4000-8000-000000000000",
+        content: "Hello"
+      })
+    });
+    const payload = await response.json() as { error: string };
+
+    expect(response.status).toBe(404);
+    expect(payload.error).toBe("Conversation not found.");
+  });
+
   it("returns 404 for unknown conversation history", async () => {
     const response = await fetch(
       baseUrl + "/api/conversations/00000000-0000-4000-8000-000000000000/messages"

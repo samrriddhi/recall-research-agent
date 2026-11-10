@@ -73,8 +73,13 @@ function localMidnightAsUtc(year: number, month: number, day: number, timeZone: 
 
 function buildWindow(date: CalendarDate, matchedText: string, timeZone: string): DateWindow {
   const start = localMidnightAsUtc(date.year, date.month, date.day, timeZone);
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
+  const nextCalendarDate = new Date(Date.UTC(date.year, date.month - 1, date.day + 1));
+  const end = localMidnightAsUtc(
+    nextCalendarDate.getUTCFullYear(),
+    nextCalendarDate.getUTCMonth() + 1,
+    nextCalendarDate.getUTCDate(),
+    timeZone
+  );
   return {
     from: start.toISOString(),
     to: end.toISOString(),
