@@ -66,6 +66,10 @@ Ollama must be running in the background. If it is not running, start it with: o
 - Web searches request DuckDuckGo's public search pages. Public search can be throttled or change markup; Recall reports provider failures instead of silently switching to a paid service.
 - No hosted model receives conversation history.
 
+## Scope and limitations
+
+Recall remembers conversations created inside this local application. It does not automatically access or import ChatGPT conversations from another product. Search uses public DuckDuckGo HTML/Lite pages rather than a contracted search API; those pages may temporarily rate-limit automated requests.
+
 ## Project status
 
 Under active development. See DESIGN.md for architecture, trade-offs and evaluation priorities.

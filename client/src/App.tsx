@@ -124,6 +124,20 @@ function App() {
     setError("");
   }
 
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setActiveId(null);
+        setMessages([]);
+        setInput("");
+        setError("");
+      }
+    };
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, []);
+
   function selectConversation(id: string) {
     if (loading) return;
     setError("");
