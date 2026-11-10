@@ -66,11 +66,34 @@ export function resolveDateWindow(
   const isHistoricalRecall = /\\bwhat did (i|we) (ask|discuss|talk about)\\b/i.test(query)
     || /\\b(conversation|discussion|chat|messages?) (from|on|during) today\\b/i.test(query);
   const match = matches.find((item) => {
-    if (!item.start.isCertain("day")) return false;
     // "today" usually anchors current verification, not the old conversation.
-    if (item.text.toLowerCase() === "today" && !isHistoricalRecall) return false;
-    return true;
+    if (item.text.toLowerCase() === "today") return isHistoricalRecall;
+    return item.start.isCertain("day");
   });
+
+  if (!match && isHistoricalRecall && /\\btoday\\b/i.test(query)) {
+    const todayParts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(reference);
+    const todayValues = Object.fromEntries(todayParts.map((part) => [part.type, part.value]));
+    const todayStart = localMidnightAsUtc(
+      Number(todayValues.year),
+      Number(todayValues.month),
+      Number(todayValues.day),
+      timeZone
+    );
+    const todayEnd = new Date(todayStart);
+    todayEnd.setUTCDate(todayEnd.getUTCDate() + 1);
+    return {
+      from: todayStart.toISOString(),
+      to: todayEnd.toISOString(),
+      matchedText: "today"
+    };
+  }
+
   if (!match) return undefined;
 
   const parsedDate = match.start.date();
