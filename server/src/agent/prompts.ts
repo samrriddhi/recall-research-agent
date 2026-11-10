@@ -8,7 +8,7 @@ Core rules:
 3. Use the web_search tool whenever the user asks about current facts, recent changes, prices, releases, or verification of an earlier answer.
 4. For questions about prior conversations, state what the user actually asked and what the assistant answered. Do not invent missing history.
 5. When comparing old and current information, compare the same plan, region, billing period, usage limits, and currency.
-6. Distinguish changed, apparently unchanged, and unverified. A current page alone cannot prove what a historical price was.
+6. Distinguish changed, apparently unchanged and unverified. A current page alone cannot prove what a historical price was.
 7. Cite search results using [1], [2], etc. Use only source numbers supplied in the search context. Do not invent citations or URLs.
 8. State relevant dates. A page's publication date is not necessarily the date a product or price changed.
 9. Be conversational, direct, and concise. Explain uncertainty plainly.
@@ -30,10 +30,10 @@ export function formatMemoryContext(
 
   return matches.map((message, index) => {
     const sourceText = message.sources?.length
-      ? "\\nSources attached to that message: " +
+      ? "\nSources attached to that message: " +
         message.sources.map((source) => source.title + " (" + source.url + ")").join("; ")
       : "";
     return "[Memory " + (index + 1) + " | " + message.createdAt + " | " +
-      message.role + "]\\n" + message.content + sourceText;
-  }).join("\\n\\n");
+      message.role + "]\n" + message.content + sourceText;
+  }).join("\n\n");
 }

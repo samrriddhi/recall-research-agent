@@ -28,12 +28,10 @@ const insertConversation = db.prepare(`
   INSERT INTO conversations (id, title, created_at, updated_at)
   VALUES (@id, @title, @createdAt, @updatedAt)
 `);
-
 const insertMessage = db.prepare(`
   INSERT INTO messages (id, conversation_id, role, content, created_at)
   VALUES (@id, @conversationId, @role, @content, @createdAt)
 `);
-
 const insertSource = db.prepare(`
   INSERT INTO message_sources (message_id, title, url, snippet, retrieved_at)
   VALUES (@messageId, @title, @url, @snippet, @retrievedAt)
@@ -67,13 +65,11 @@ export function addMessage(
   content: string,
   sources: SourceRecord[] = []
 ): MessageRecord {
-  if (!conversationExists(conversationId)) {
-    throw new Error("Conversation was not found.");
-  }
+  if (!conversationExists(conversationId)) throw new Error("Conversation was not found.");
 
   const id = randomUUID();
   const createdAt = new Date().toISOString();
-  const transaction = db.transaction(() => {
+  db.transaction(() => {
     insertMessage.run({ id, conversationId, role, content, createdAt });
     for (const source of sources) {
       insertSource.run({
@@ -86,8 +82,7 @@ export function addMessage(
     }
     db.prepare("UPDATE conversations SET updated_at = ? WHERE id = ?")
       .run(createdAt, conversationId);
-  });
-  transaction();
+  })();
 
   return { id, conversationId, role, content, createdAt, sources };
 }
@@ -134,7 +129,7 @@ function buildFtsExpression(query: string): string {
     "you", "our", "last", "asked", "tell", "today", "since", "still"
   ]);
   const terms = [...new Set(
-    (query.toLowerCase().match(/[\\p{L}\\p{N}]{3,}/gu) ?? [])
+    (query.toLowerCase().match(/[a-z0-9]{3,}/g) ?? [])
       .filter((term) => !stopWords.has(term))
   )].slice(0, 10);
 

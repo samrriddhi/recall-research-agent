@@ -13,7 +13,6 @@ import {
   Plus,
   Search,
   Sparkles,
-  Wifi,
   WifiOff
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -44,6 +43,7 @@ type Conversation = {
 type Health = {
   status: string;
   ollama: "connected" | "not_connected";
+  modelInstalled?: boolean;
   model: string;
 };
 
@@ -67,19 +67,14 @@ const suggestions = [
 
 async function readJson<T>(response: Response): Promise<T> {
   const payload = await response.json() as T & { error?: string };
-  if (!response.ok) {
-    throw new Error(payload.error || "The request could not be completed.");
-  }
+  if (!response.ok) throw new Error(payload.error || "The request could not be completed.");
   return payload;
 }
 
 function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric"
-  }).format(date);
+  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
 }
 
 function domainFromUrl(value: string): string {
@@ -106,15 +101,15 @@ function App() {
     const response = await fetch("/api/conversations");
     const data = await readJson<{ conversations: Conversation[] }>(response);
     setConversations(data.conversations);
+    return data.conversations;
   }
 
   async function refreshHealth() {
     try {
       const response = await fetch("/api/health");
-      const data = await readJson<Health>(response);
-      setHealth(data);
+      setHealth(await readJson<Health>(response));
     } catch {
-      setHealth({ status: "offline", ollama: "not_connected", model: "qwen3:4b" });
+      setHealth({ status: "offline", ollama: "not_connected", modelInstalled: false, model: "qwen3:4b" });
     }
   }
 
@@ -145,9 +140,7 @@ function App() {
         if (!cancelled) setError(cause instanceof Error ? cause.message : "Could not load conversation.");
       });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [activeId]);
 
   useEffect(() => {
@@ -161,14 +154,14 @@ function App() {
     textarea.style.height = Math.min(textarea.scrollHeight, 180) + "px";
   }, [input]);
 
-  async function startNewConversation() {
+  function startNewConversation() {
     setActiveId(null);
     setMessages([]);
     setInput("");
     setError("");
   }
 
-  async function selectConversation(id: string) {
+  function selectConversation(id: string) {
     if (loading) return;
     setError("");
     setActiveId(id);
@@ -216,12 +209,7 @@ function App() {
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
         })
       });
-      const result = await readJson<{
-        conversationId: string;
-        message: ChatMessage;
-        sources: Source[];
-      }>(response);
-
+      const result = await readJson<{ message: ChatMessage }>(response);
       setMessages((current) => [
         ...current.filter((message) => message.id !== optimisticId),
         result.message
@@ -242,7 +230,7 @@ function App() {
     return haystack.includes(historyFilter.toLowerCase());
   });
 
-  const isReady = health?.ollama === "connected";
+  const isReady = health?.ollama === "connected" && health.modelInstalled === true;
 
   return (
     <div className="app-shell">
@@ -255,10 +243,10 @@ function App() {
           </div>
         </div>
 
-        <button className="new-chat-button" onClick={() => void startNewConversation()}>
+        <button className="new-chat-button" onClick={startNewConversation}>
           <Plus size={16} />
           <span>New conversation</span>
-          <span className="shortcut">⌘ K</span>
+          <span className="shortcut">Ctrl K</span>
         </button>
 
         <div className="sidebar-section">
@@ -284,7 +272,7 @@ function App() {
               <button
                 key={conversation.id}
                 className={"conversation-item " + (activeId === conversation.id ? "active" : "")}
-                onClick={() => void selectConversation(conversation.id)}
+                onClick={() => selectConversation(conversation.id)}
               >
                 <MessageSquare size={15} />
                 <span className="conversation-copy">
@@ -349,11 +337,7 @@ function App() {
                   {suggestions.map((suggestion) => {
                     const Icon = suggestion.icon;
                     return (
-                      <button
-                        className="suggestion-card"
-                        key={suggestion.title}
-                        onClick={() => void sendPrompt(suggestion.prompt)}
-                      >
+                      <button className="suggestion-card" key={suggestion.title} onClick={() => void sendPrompt(suggestion.prompt)}>
                         <div className="suggestion-icon"><Icon size={17} /></div>
                         <span>{suggestion.title}</span>
                         <p>{suggestion.prompt}</p>
@@ -367,9 +351,7 @@ function App() {
                 {messages.map((message) => (
                   <article className={"message " + message.role} key={message.id}>
                     <div className="message-avatar">
-                      {message.role === "assistant"
-                        ? <BrainCircuit size={17} />
-                        : <span>Y</span>}
+                      {message.role === "assistant" ? <BrainCircuit size={17} /> : <span>Y</span>}
                     </div>
                     <div className="message-body">
                       <div className="message-meta">
@@ -377,24 +359,16 @@ function App() {
                         <span>{new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(message.createdAt))}</span>
                       </div>
                       <div className="message-content">
-                        {message.role === "assistant" ? (
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
-                        ) : (
-                          <p>{message.content}</p>
-                        )}
+                        {message.role === "assistant"
+                          ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                          : <p>{message.content}</p>}
                       </div>
                       {message.sources?.length > 0 && (
                         <div className="sources-panel">
                           <div className="sources-heading"><Globe2 size={13} /> SOURCES CHECKED <span>{message.sources.length}</span></div>
                           <div className="source-list">
                             {message.sources.map((source, index) => (
-                              <a
-                                className="source-card"
-                                key={source.url}
-                                href={source.url}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
+                              <a className="source-card" key={source.url} href={source.url} target="_blank" rel="noreferrer">
                                 <span className="source-number">{index + 1}</span>
                                 <span className="source-copy">
                                   <strong>{source.title}</strong>
@@ -437,13 +411,10 @@ function App() {
                   Start Ollama and install the Qwen3 model to begin chatting.
                 </div>
               )}
-              <form
-                className="composer"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void sendPrompt(input);
-                }}
-              >
+              <form className="composer" onSubmit={(event) => {
+                event.preventDefault();
+                void sendPrompt(input);
+              }}>
                 <textarea
                   ref={textareaRef}
                   value={input}

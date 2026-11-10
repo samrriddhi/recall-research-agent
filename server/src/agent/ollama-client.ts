@@ -22,9 +22,13 @@ export async function ollamaChat(
   messages: OllamaMessage[],
   tools: Array<Record<string, unknown>> = []
 ): Promise<OllamaChatResponse> {
+  const baseUrl = env.OLLAMA_BASE_URL.endsWith("/")
+    ? env.OLLAMA_BASE_URL.slice(0, -1)
+    : env.OLLAMA_BASE_URL;
+
   let response: Response;
   try {
-    response = await fetch(env.OLLAMA_BASE_URL.replace(/\\/$/, "") + "/api/chat", {
+    response = await fetch(baseUrl + "/api/chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
       signal: AbortSignal.timeout(env.OLLAMA_TIMEOUT_MS),
@@ -52,8 +56,6 @@ export async function ollamaChat(
   }
 
   const payload = await response.json() as OllamaChatResponse;
-  if (!payload.message) {
-    throw new Error("Ollama returned an invalid chat response.");
-  }
+  if (!payload.message) throw new Error("Ollama returned an invalid chat response.");
   return payload;
 }
