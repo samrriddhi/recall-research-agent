@@ -60,6 +60,16 @@ function domainFromUrl(value: string): string {
   catch { return value; }
 }
 
+function sourceMetadata(source: Source): string {
+  const parts = [
+    domainFromUrl(source.url),
+    source.fetchStatus === "fetched" ? "Page text read" : "Search snippet",
+    source.publishedAt ? "Published " + formatDate(source.publishedAt) : "",
+    source.modifiedAt ? "Page modified " + formatDate(source.modifiedAt) : ""
+  ].filter(Boolean);
+  return parts.join(" · ");
+}
+
 function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -334,7 +344,7 @@ function App() {
                             {message.sources.map((source, index) => (
                               <a className="source-card" key={source.url} href={source.url} target="_blank" rel="noreferrer">
                                 <span className="source-number">{index + 1}</span>
-                                <span className="source-copy"><strong>{source.title}</strong><small>{domainFromUrl(source.url)} · {source.fetchStatus === "fetched" ? "Page text read" : "Search snippet"}</small></span>
+                                <span className="source-copy"><strong>{source.title}</strong><small>{sourceMetadata(source)}</small></span>
                                 <ExternalLink size={13} />
                               </a>
                             ))}

@@ -26,7 +26,7 @@ Examples:
 
 ## Requirements
 
-- Node.js 22+
+- Node.js 22.12+
 - Ollama installed
 - About 2.5 GB for the Qwen3 4B model, plus dependencies and local conversation data
 - Internet access for model download and web search
