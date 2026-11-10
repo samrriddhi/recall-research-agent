@@ -24,7 +24,6 @@ function normalizeResultUrl(rawUrl: string, baseUrl: string): string | undefined
     const parsed = new URL(rawUrl, baseUrl);
     const redirected = parsed.searchParams.get("uddg");
     const candidate = redirected ? new URL(redirected) : parsed;
-
     if (!["http:", "https:"].includes(candidate.protocol)) return undefined;
     if (candidate.hostname.endsWith("duckduckgo.com")) return undefined;
     return candidate.toString();
@@ -40,8 +39,8 @@ export function parseDuckDuckGoResults(
 ): WebSearchResult[] {
   const $ = load(html);
   const results: WebSearchResult[] = [];
-
   const containers = $(".result");
+
   if (containers.length > 0) {
     containers.each((_, element) => {
       const item = $(element);
@@ -50,7 +49,6 @@ export function parseDuckDuckGoResults(
       const href = anchor.attr("href");
       const snippet = item.find(".result__snippet, .result-snippet").first().text().trim();
       if (!title || !href) return;
-
       const url = normalizeResultUrl(href, baseUrl);
       if (url) results.push({ title, url, snippet, source, fetchStatus: "snippet-only" });
     });
@@ -61,7 +59,6 @@ export function parseDuckDuckGoResults(
       const href = anchor.attr("href");
       const snippet = anchor.closest("tr").next("tr").find(".result-snippet").text().trim();
       if (!title || !href) return;
-
       const url = normalizeResultUrl(href, baseUrl);
       if (url) results.push({ title, url, snippet, source, fetchStatus: "snippet-only" });
     });
@@ -81,22 +78,13 @@ async function requestHtml(url: string): Promise<string> {
     signal: AbortSignal.timeout(env.WEB_SEARCH_TIMEOUT_MS),
     redirect: "follow"
   });
-
-  if (!response.ok) {
-    throw new Error("Search provider returned HTTP " + response.status + ".");
-  }
-
+  if (!response.ok) throw new Error("Search provider returned HTTP " + response.status + ".");
   const html = await response.text();
-  if (!html || html.length < 200) {
-    throw new Error("Search provider returned an empty response.");
-  }
+  if (!html || html.length < 200) throw new Error("Search provider returned an empty response.");
   return html;
 }
 
-async function enrichResults(
-  results: WebSearchResult[],
-  pageCount: number
-): Promise<WebSearchResult[]> {
+async function enrichResults(results: WebSearchResult[], pageCount: number): Promise<WebSearchResult[]> {
   return Promise.all(results.map(async (result, index) => {
     if (index >= pageCount) return result;
     try {
@@ -110,26 +98,18 @@ async function enrichResults(
         fetchStatus: evidence.content ? "fetched" as const : "snippet-only" as const
       };
     } catch {
-      // Search snippets still provide a fallback when a site blocks page reading.
       return { ...result, fetchStatus: "snippet-only" as const };
     }
   }));
 }
 
-/**
- * Keyless web search. DuckDuckGo's HTML and Lite frontends are used in order.
- * The first few result pages are read with bounded requests so the agent can
- * inspect primary-page text rather than relying only on search snippets.
- */
 export async function searchWeb(
   query: string,
   maxResults = env.WEB_SEARCH_MAX_RESULTS,
   hydrateCount = 2
 ): Promise<WebSearchResult[]> {
   const normalizedQuery = query.trim().slice(0, 300);
-  if (normalizedQuery.length < 2) {
-    throw new Error("Enter a search query with at least two characters.");
-  }
+  if (normalizedQuery.length < 2) throw new Error("Enter a search query with at least two characters.");
 
   const attempts: Array<{ url: string; source: WebSearchResult["source"] }> = [
     {
@@ -148,14 +128,12 @@ export async function searchWeb(
       const html = await requestHtml(attempt.url);
       const parsed = parseDuckDuckGoResults(html, attempt.url, attempt.source);
       if (parsed.length > 0) {
-        const boundedResults = parsed.slice(0, Math.min(maxResults, 10));
-        return enrichResults(boundedResults, Math.min(hydrateCount, boundedResults.length));
+        const bounded = parsed.slice(0, Math.min(maxResults, 10));
+        return enrichResults(bounded, Math.min(hydrateCount, bounded.length));
       }
       failures.push(attempt.source + ": no parseable results");
     } catch (error) {
-      failures.push(
-        attempt.source + ": " + (error instanceof Error ? error.message : "request failed")
-      );
+      failures.push(attempt.source + ": " + (error instanceof Error ? error.message : "request failed"));
     }
   }
 
