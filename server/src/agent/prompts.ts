@@ -41,9 +41,9 @@ export function formatMemoryContext(
 
   // Keep retrieved evidence inside a predictable prompt budget. Historical
   // page text is more valuable than replaying entire old conversations.
-  const MAX_CONTEXT_CHARS = 8_000;
-  const MAX_MESSAGE_CHARS = 1_000;
-  const MAX_SOURCE_TEXT_CHARS = 900;
+  const MAX_CONTEXT_CHARS = 6_500;
+  const MAX_MESSAGE_CHARS = 800;
+  const MAX_SOURCE_TEXT_CHARS = 750;
   const sections: string[] = [];
   let usedChars = 0;
 

@@ -63,10 +63,10 @@ function deduplicateSources(sources: WebSearchResult[]): WebSearchResult[] {
     if (seen.has(source.url)) return false;
     seen.add(source.url);
     return true;
-  }).slice(0, 20);
+  }).slice(0, 12);
 }
 
-function renderSearchContext(sources: WebSearchResult[]): string {
+export function renderSearchContext(sources: WebSearchResult[]): string {
   if (sources.length === 0) return "The web search returned no usable sources.";
   return sources.map((source, index) =>
     "[" + (index + 1) + "] " + source.title +
@@ -75,7 +75,7 @@ function renderSearchContext(sources: WebSearchResult[]): string {
     (source.searchQuery ? "\nSearch query: " + source.searchQuery : "") +
     (source.publishedAt ? "\nPublished: " + source.publishedAt : "") +
     (source.modifiedAt ? "\nPage modified: " + source.modifiedAt : "") +
-    (source.content ? "\nPage text:\n" + source.content.slice(0, 1000) : "")
+    (source.content ? "\nPage text:\n" + source.content.slice(0, 800) : "")
   ).join("\n\n");
 }
 
@@ -143,10 +143,12 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
     memory = getRecentHistory(24).filter((item) => item.id !== userMessage.id);
   }
 
-  const recent = getRecentMessages(conversation.id, 12);
+  const recent = getRecentMessages(conversation.id, 8);
+  const recentMessageIds = new Set(recent.map((item) => item.id));
+  const memoryForPrompt = memory.filter((item) => !recentMessageIds.has(item.id));
   const historyMessages: OllamaMessage[] = recent.map((item) => ({
     role: item.role,
-    content: item.content
+    content: item.content.slice(0, 1_000)
   }));
 
   const systemContext = [
@@ -154,7 +156,7 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
     "",
     "CURRENT LOCAL DATE AND TIME: " + currentLocalDateTime + " (" + timeZone + ").",
     "RELEVANT LONG-TERM CONVERSATION MEMORY:",
-    formatMemoryContext(memory),
+    formatMemoryContext(memoryForPrompt),
     dateWindow
       ? "\nThe user's date reference \"" + dateWindow.matchedText +
         "\" resolved to " + dateWindow.from + " through (exclusive) " + dateWindow.to +
@@ -228,6 +230,9 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
       : [];
 
   const searchFailures: string[] = [];
+  // Entity-specific results take priority in the final evidence list; keep
+  // the model's initial broad search as additional context after the sweep.
+  const broadSearchSources = shouldRunEntitySweep ? sources.splice(0) : [];
   for (let index = 0; index < queriesToRun.length; index += 2) {
     const batch = queriesToRun.slice(index, index + 2);
     type SearchOutcome =
@@ -236,7 +241,7 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
 
     const outcomes: SearchOutcome[] = await Promise.all(batch.map(async (query): Promise<SearchOutcome> => {
       try {
-        return { query, ok: true, results: await searchWeb(query, 4, 1) };
+        return { query, ok: true, results: await searchWeb(query, 2, 1) };
       } catch (error) {
         return {
           query,
@@ -253,6 +258,10 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
         searchFailures.push(outcome.query + ": " + outcome.error);
       }
     }
+  }
+
+  if (broadSearchSources.length > 0) {
+    sources.push(...broadSearchSources);
   }
 
   if (queriesToRun.length > 0) {
