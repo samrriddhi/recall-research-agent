@@ -5,6 +5,10 @@ export interface SourceRecord {
   title: string;
   url: string;
   snippet: string;
+  content?: string;
+  publishedAt?: string;
+  modifiedAt?: string;
+  fetchStatus?: "fetched" | "snippet-only";
 }
 
 export interface MessageRecord {
@@ -33,8 +37,12 @@ const insertMessage = db.prepare(`
   VALUES (@id, @conversationId, @role, @content, @createdAt)
 `);
 const insertSource = db.prepare(`
-  INSERT INTO message_sources (message_id, title, url, snippet, retrieved_at)
-  VALUES (@messageId, @title, @url, @snippet, @retrievedAt)
+  INSERT INTO message_sources (
+    message_id, title, url, snippet, content, published_at, modified_at, fetch_status, retrieved_at
+  )
+  VALUES (
+    @messageId, @title, @url, @snippet, @content, @publishedAt, @modifiedAt, @fetchStatus, @retrievedAt
+  )
 `);
 
 export function createConversation(title = "New conversation") {
@@ -77,6 +85,10 @@ export function addMessage(
         title: source.title,
         url: source.url,
         snippet: source.snippet,
+        content: source.content ?? "",
+        publishedAt: source.publishedAt ?? null,
+        modifiedAt: source.modifiedAt ?? null,
+        fetchStatus: source.fetchStatus ?? "snippet-only",
         retrievedAt: createdAt
       });
     }
@@ -89,7 +101,12 @@ export function addMessage(
 
 function mapMessage(row: DbMessage): MessageRecord {
   const sources = db.prepare(`
-    SELECT title, url, snippet FROM message_sources
+    SELECT
+      title, url, snippet, content,
+      published_at AS publishedAt,
+      modified_at AS modifiedAt,
+      fetch_status AS fetchStatus
+    FROM message_sources
     WHERE message_id = ? ORDER BY id
   `).all(row.id) as SourceRecord[];
 

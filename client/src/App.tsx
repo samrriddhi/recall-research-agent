@@ -7,7 +7,15 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-type Source = { title: string; url: string; snippet: string };
+type Source = {
+  title: string;
+  url: string;
+  snippet: string;
+  content?: string;
+  publishedAt?: string;
+  modifiedAt?: string;
+  fetchStatus?: "fetched" | "snippet-only";
+};
 type ChatMessage = {
   id: string;
   conversationId: string;
@@ -326,7 +334,7 @@ function App() {
                             {message.sources.map((source, index) => (
                               <a className="source-card" key={source.url} href={source.url} target="_blank" rel="noreferrer">
                                 <span className="source-number">{index + 1}</span>
-                                <span className="source-copy"><strong>{source.title}</strong><small>{domainFromUrl(source.url)}</small></span>
+                                <span className="source-copy"><strong>{source.title}</strong><small>{domainFromUrl(source.url)} · {source.fetchStatus === "fetched" ? "Page text read" : "Search snippet"}</small></span>
                                 <ExternalLink size={13} />
                               </a>
                             ))}

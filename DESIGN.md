@@ -19,7 +19,7 @@ The agent orchestrator classifies the request, retrieves historical context, res
 
 ## Search and evidence limitations
 
-The no-key search adapter parses DuckDuckGo's public HTML and Lite pages. These are public interfaces, not a contracted API; they can throttle automated traffic or change markup. The application has a fallback endpoint and surfaces failures. It does not silently use paid providers. Snippets are leads, not authoritative proof; official pricing or release pages should be preferred. The first implementation stores the retrieved URLs and snippets but is not a complete historical price archive.
+The no-key search adapter parses DuckDuckGo's public HTML and Lite pages. These are public interfaces, not a contracted API; they can throttle automated traffic or change markup. The application has a fallback endpoint and surfaces failures. It does not silently use paid providers. Search snippets are leads, not authoritative proof; Recall also extracts a bounded amount of text from a small number of public result pages. Page extraction is best-effort, and sites may block automated requests or render content only in JavaScript. It stores source URLs, snippets, extracted text and available publication metadata, but is not a complete historical price archive.
 
 ## Alternatives considered
 

@@ -67,7 +67,7 @@ function deduplicateSources(sources: WebSearchResult[]): WebSearchResult[] {
 
 function renderSearchContext(sources: WebSearchResult[]): string {
   if (sources.length === 0) return "The web search returned no usable sources.";
-  return sources.map((source, index) =>
+  return sources.slice(0, 8).map((source, index) =>
     "[" + (index + 1) + "] " + source.title +
     "\nURL: " + source.url +
     "\nSnippet: " + source.snippet
@@ -216,7 +216,7 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
 
     const outcomes: SearchOutcome[] = await Promise.all(batch.map(async (query): Promise<SearchOutcome> => {
       try {
-        return { query, ok: true, results: await searchWeb(query, 4) };
+        return { query, ok: true, results: await searchWeb(query, 4, 1) };
       } catch (error) {
         return {
           query,

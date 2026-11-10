@@ -34,6 +34,10 @@ db.exec(`
     title TEXT NOT NULL,
     url TEXT NOT NULL,
     snippet TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT '',
+    published_at TEXT,
+    modified_at TEXT,
+    fetch_status TEXT NOT NULL DEFAULT 'snippet-only',
     retrieved_at TEXT NOT NULL
   );
 
@@ -55,6 +59,25 @@ db.exec(`
     VALUES ('delete', old.rowid, old.content);
   END;
 `);
+
+// Additive source-evidence migrations preserve existing local databases.
+
+const sourceColumns = new Set(
+  (db.prepare("PRAGMA table_info(message_sources)").all() as Array<{ name: string }>)
+    .map((column) => column.name)
+);
+if (!sourceColumns.has("content")) {
+  db.exec("ALTER TABLE message_sources ADD COLUMN content TEXT NOT NULL DEFAULT ''");
+}
+if (!sourceColumns.has("published_at")) {
+  db.exec("ALTER TABLE message_sources ADD COLUMN published_at TEXT");
+}
+if (!sourceColumns.has("modified_at")) {
+  db.exec("ALTER TABLE message_sources ADD COLUMN modified_at TEXT");
+}
+if (!sourceColumns.has("fetch_status")) {
+  db.exec("ALTER TABLE message_sources ADD COLUMN fetch_status TEXT NOT NULL DEFAULT 'snippet-only'");
+}
 
 // Rebuild at startup to recover an FTS index if the database was upgraded
 // from an earlier schema version or the index was interrupted by a crash.
