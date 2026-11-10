@@ -40,6 +40,7 @@ export interface ChatInput {
 
 export interface ChatOutput {
   conversationId: string;
+  userMessage: MessageRecord;
   message: MessageRecord;
   sources: WebSearchResult[];
   memoryMatches: number;
@@ -189,6 +190,7 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
 
   return {
     conversationId: conversation.id,
+    userMessage,
     message: assistantMessage,
     sources: finalSources,
     memoryMatches: memory.length
