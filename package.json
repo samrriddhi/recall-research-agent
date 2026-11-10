@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "A local-first conversational research agent with temporal memory and free web search.",
-  "engines": { "node": ">=22.0.0" },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "concurrently -k -n server,client -c cyan,magenta \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "tsx watch server/src/index.ts",
@@ -24,7 +26,8 @@
     "react-dom": "^19.1.1",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "zod": "^4.1.5"
+    "zod": "^4.1.5",
+    "dotenv": "^16.6.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
