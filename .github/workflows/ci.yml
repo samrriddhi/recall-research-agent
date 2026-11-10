@@ -18,6 +18,11 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: Report dependency audit findings
+        shell: bash
+        run: |
+          npm audit --json > audit.json || true
+          node -e 'const audit=require("./audit.json"); console.log("Audit summary:", audit.metadata?.vulnerabilities); for (const [name, item] of Object.entries(audit.vulnerabilities || {})) console.log(name, JSON.stringify({severity:item.severity,range:item.range,fixAvailable:item.fixAvailable}));'
       - name: Run tests
         run: npm test
       - name: Build
