@@ -179,10 +179,20 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
     response = await ollamaChat(messages, toolRounds < 2 ? [webSearchTool] : []);
   }
 
-  // Do not let a small local model silently skip search on current questions.
+  // Carry names from retrieved history into fallback searches when the user refers to them indirectly.
   if (intent.shouldSearch && sources.length === 0) {
     try {
-      const fallbackResults = await searchWeb(input.content);
+      const historicalContext = memory
+        .slice(0, 3)
+        .map((item) => item.content.replace(/https?:\/\/\S+/g, ""))
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .slice(0, 180);
+      const fallbackQuery = (historicalContext + " " + input.content)
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 300);
+      const fallbackResults = await searchWeb(fallbackQuery);
       sources.push(...fallbackResults);
       messages.push({
         role: "system",
