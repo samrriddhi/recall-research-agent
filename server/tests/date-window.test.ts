@@ -55,6 +55,16 @@ describe("resolveDateWindow", () => {
     expect(result?.to).toBe("2026-11-13T18:30:00.000Z");
   });
 
+  it("resolves this Monday to the Monday in the current calendar week", () => {
+    const result = resolveDateWindow(
+      "What did we discuss this Monday?",
+      referenceTime,
+      "Asia/Kolkata"
+    );
+    expect(result?.from).toBe("2026-11-08T18:30:00.000Z");
+    expect(result?.to).toBe("2026-11-09T18:30:00.000Z");
+  });
+
   it("prefers an explicit calendar date over a weekday mention", () => {
     const result = resolveDateWindow(
       "What did we discuss on Monday, 3 November 2025?",

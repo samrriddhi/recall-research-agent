@@ -115,11 +115,15 @@ function resolveWeekday(
   const currentDay = todayUtc.getUTCDay();
   let resolved: Date;
   if (qualifier === "this" && modifier === "") {
-    const daysForward = (targetDay - currentDay + 7) % 7;
+    // "This <weekday>" means the weekday within the current Monday–Sunday
+    // calendar week, not necessarily the next occurrence after today.
+    const daysSinceMonday = (currentDay + 6) % 7;
+    const daysFromMonday = (targetDay + 6) % 7;
+    const offsetFromToday = daysFromMonday - daysSinceMonday;
     resolved = new Date(Date.UTC(
       localToday.year,
       localToday.month - 1,
-      localToday.day + daysForward
+      localToday.day + offsetFromToday
     ));
   } else {
     let daysBack = (currentDay - targetDay + 7) % 7;
