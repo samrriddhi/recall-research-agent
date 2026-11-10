@@ -45,6 +45,26 @@ describe("resolveDateWindow", () => {
     expect(result?.to).toBe("2026-11-03T18:30:00.000Z");
   });
 
+  it("resolves this Friday to the upcoming weekday in the current week", () => {
+    const result = resolveDateWindow(
+      "What did we discuss this Friday?",
+      "2026-11-10T15:00:00.000Z",
+      "Asia/Kolkata"
+    );
+    expect(result?.from).toBe("2026-11-13T18:30:00.000Z");
+    expect(result?.to).toBe("2026-11-14T18:30:00.000Z");
+  });
+
+  it("prefers an explicit calendar date over a weekday mention", () => {
+    const result = resolveDateWindow(
+      "What did we discuss on Monday, 3 November 2025?",
+      "2026-11-10T15:00:00.000Z",
+      "Asia/Kolkata"
+    );
+    expect(result?.from).toBe("2025-11-02T18:30:00.000Z");
+    expect(result?.to).toBe("2025-11-03T18:30:00.000Z");
+  });
+
   it("resolves a weekday reference to the most recent past weekday", () => {
     const result = resolveDateWindow(
       "On Monday we shortlisted five CRM tools.",

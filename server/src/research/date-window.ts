@@ -93,10 +93,17 @@ function resolveWeekday(
   timeZone: string
 ): DateWindow | undefined {
   const weekdayPattern = /\b(?:(last|previous)\s+)?(on\s+|this\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
+  // An explicit calendar date is more precise than a weekday mentioned
+  // alongside it ("Monday, 3 November 2025").
+  if (/\\b\\d{1,2}\\s+[a-z]+\\b|\\b[a-z]+\\s+\\d{1,2}(?:,?\\s+\\d{4})?\\b/i.test(query)) {
+    return undefined;
+  }
+
   const match = weekdayPattern.exec(query);
   if (!match) return undefined;
 
   const modifier = (match[1] ?? "").toLowerCase();
+  const qualifier = (match[2] ?? "").trim().toLowerCase();
   const dayName = match[3]?.toLowerCase();
   if (!dayName) return undefined;
 
@@ -106,18 +113,26 @@ function resolveWeekday(
   const localToday = localCalendarDate(reference, timeZone);
   const todayUtc = new Date(Date.UTC(localToday.year, localToday.month - 1, localToday.day));
   const currentDay = todayUtc.getUTCDay();
-  let daysBack = (currentDay - targetDay + 7) % 7;
-
-  // "Last Tuesday" means the prior week's Tuesday when today is Tuesday.
-  if ((modifier === "last" || modifier === "previous") && daysBack === 0) {
-    daysBack = 7;
+  let resolved: Date;
+  if (qualifier === "this" && modifier === "") {
+    const daysForward = (targetDay - currentDay + 7) % 7;
+    resolved = new Date(Date.UTC(
+      localToday.year,
+      localToday.month - 1,
+      localToday.day + daysForward
+    ));
+  } else {
+    let daysBack = (currentDay - targetDay + 7) % 7;
+    // "Last Tuesday" means the prior week's Tuesday when today is Tuesday.
+    if ((modifier === "last" || modifier === "previous") && daysBack === 0) {
+      daysBack = 7;
+    }
+    resolved = new Date(Date.UTC(
+      localToday.year,
+      localToday.month - 1,
+      localToday.day - daysBack
+    ));
   }
-
-  const resolved = new Date(Date.UTC(
-    localToday.year,
-    localToday.month - 1,
-    localToday.day - daysBack
-  ));
   return buildWindow({
     year: resolved.getUTCFullYear(),
     month: resolved.getUTCMonth() + 1,

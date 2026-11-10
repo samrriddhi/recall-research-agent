@@ -10,6 +10,7 @@ export interface SourceRecord {
   modifiedAt?: string;
   fetchStatus?: "fetched" | "snippet-only";
   provider?: string;
+  source?: string;
   searchQuery?: string;
 }
 
@@ -93,7 +94,7 @@ export function addMessage(
         publishedAt: source.publishedAt ?? null,
         modifiedAt: source.modifiedAt ?? null,
         fetchStatus: source.fetchStatus ?? "snippet-only",
-        provider: source.provider ?? null,
+        provider: source.provider ?? source.source ?? null,
         searchQuery: source.searchQuery ?? null,
         retrievedAt: createdAt
       });
