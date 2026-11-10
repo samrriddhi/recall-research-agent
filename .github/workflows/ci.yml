@@ -27,5 +27,7 @@ jobs:
         run: npm audit --audit-level=moderate
       - name: Run tests
         run: npm test
+      - name: Run deterministic agent evaluation
+        run: npm run evaluate
       - name: Build
         run: npm run build

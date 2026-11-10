@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { runChat } from "../agent/agent.service.js";
+import { conversationExists } from "../memory/memory.service.js";
 
 export const chatRouter = Router();
 
@@ -18,6 +19,11 @@ chatRouter.post("/", async (request, response, next) => {
       error: "Invalid chat request.",
       details: parsed.error.issues
     });
+    return;
+  }
+
+  if (parsed.data.conversationId && !conversationExists(parsed.data.conversationId)) {
+    response.status(404).json({ error: "Conversation not found." });
     return;
   }
 

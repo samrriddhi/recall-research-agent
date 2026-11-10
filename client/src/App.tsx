@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  ArrowUp, BrainCircuit, Check, ChevronDown, CircleHelp, Clock3,
+  ArrowUp, BrainCircuit, Check, CircleHelp, Clock3,
   ExternalLink, Globe2, LoaderCircle, MessageSquare, Plus, Search,
   Sparkles, WifiOff
 } from "lucide-react";
@@ -257,7 +257,7 @@ function App() {
         <div className="sidebar-footer">
           <div className="privacy-note">
             <div className="privacy-icon"><Check size={13} /></div>
-            <div><strong>Private by default</strong><span>Your history stays on this device.</span></div>
+            <div><strong>Local conversation history</strong><span>Only search queries leave this device.</span></div>
           </div>
           <div className="sidebar-version">RECALL · LOCAL EDITION</div>
         </div>
@@ -270,7 +270,7 @@ function App() {
             <div className={"model-status " + (isReady ? "ready" : "offline")}>
               <span className="status-dot" /><span>{isReady ? "LOCAL MODEL READY" : "MODEL OFFLINE"}</span>
             </div>
-            <div className="model-name"><span className="model-name-main">Qwen3 4B</span><span className="model-name-sub">ON DEVICE</span><ChevronDown size={13} /></div>
+            <div className="model-name"><span className="model-name-main">Qwen3 4B</span><span className="model-name-sub">ON DEVICE</span></div>
           </div>
         </header>
 
@@ -378,7 +378,7 @@ function App() {
                   </button>
                 </div>
               </form>
-              <div className="composer-disclaimer">Chat history stays local; search queries go to DuckDuckGo. Check sources for important decisions.</div>
+              <div className="composer-disclaimer">Chat history and model inference stay local. Search queries go to DuckDuckGo; verify sources for important decisions.</div>
             </div>
           </div>
         </div>

@@ -62,7 +62,7 @@ function deduplicateSources(sources: WebSearchResult[]): WebSearchResult[] {
     if (seen.has(source.url)) return false;
     seen.add(source.url);
     return true;
-  }).slice(0, 8);
+  }).slice(0, 20);
 }
 
 function renderSearchContext(sources: WebSearchResult[]): string {
@@ -208,7 +208,6 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
       : [];
 
   const searchFailures: string[] = [];
-  let executedFallback = false;
   for (let index = 0; index < queriesToRun.length; index += 2) {
     const batch = queriesToRun.slice(index, index + 2);
     const outcomes = await Promise.all(batch.map(async (query) => {
@@ -225,7 +224,6 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
     for (const outcome of outcomes) {
       if ("results" in outcome) {
         sources.push(...outcome.results);
-        executedFallback = true;
       } else {
         searchFailures.push(outcome.query + ": " + outcome.error);
       }
@@ -234,12 +232,15 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
 
   if (queriesToRun.length > 0) {
     const uniqueSources = deduplicateSources(sources);
+    const partialFailureNote = searchFailures.length > 0
+      ? "\\nSome search requests failed; do not treat missing entities as unchanged:\\n" + searchFailures.join("\\n")
+      : "";
     const evidence = uniqueSources.length > 0
-      ? "FINAL SEARCH EVIDENCE. Use this numbered source list for all citations; do not reuse numbering from earlier tool messages:\n\n" +
-        renderSearchContext(uniqueSources)
+      ? "FINAL SEARCH EVIDENCE. Use this numbered source list for all citations; do not reuse numbering from earlier tool messages:\\n\\n" +
+        renderSearchContext(uniqueSources) + partialFailureNote
       : "Web search was attempted but no usable source was returned. " +
-        searchFailures.join("\n") +
-        "\nDo not claim the answer is current or verified.";
+        searchFailures.join("\\n") +
+        "\\nDo not claim the answer is current or verified.";
 
     messages.push({ role: "system", content: evidence });
     response = await ollamaChat(messages, []);
