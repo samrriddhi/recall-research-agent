@@ -1,0 +1,49 @@
+[
+  {
+    "id": "explicit-date-asia-kolkata",
+    "category": "date",
+    "question": "What did I ask you on 3 November?",
+    "referenceTime": "2026-11-10T15:00:00.000Z",
+    "timeZone": "Asia/Kolkata",
+    "expectedFrom": "2026-11-02T18:30:00.000Z",
+    "expectedTo": "2026-11-03T18:30:00.000Z"
+  },
+  {
+    "id": "last-tuesday-asia-kolkata",
+    "category": "date",
+    "question": "Last Tuesday I asked about Postgres hosting. Has pricing changed?",
+    "referenceTime": "2026-11-10T15:00:00.000Z",
+    "timeZone": "Asia/Kolkata",
+    "expectedFrom": "2026-11-02T18:30:00.000Z",
+    "expectedTo": "2026-11-03T18:30:00.000Z"
+  },
+  {
+    "id": "weekday-monday-asia-kolkata",
+    "category": "date",
+    "question": "On Monday we shortlisted five CRM tools.",
+    "referenceTime": "2026-11-10T15:00:00.000Z",
+    "timeZone": "Asia/Kolkata",
+    "expectedFrom": "2026-11-08T18:30:00.000Z",
+    "expectedTo": "2026-11-09T18:30:00.000Z"
+  },
+  {
+    "id": "verify-today-not-history-date",
+    "category": "date-none",
+    "question": "Does your previous answer on Postgres hosting still hold today?",
+    "referenceTime": "2026-11-10T15:00:00.000Z",
+    "timeZone": "Asia/Kolkata"
+  },
+  {
+    "id": "pricing-comparison-search",
+    "category": "intent",
+    "question": "Has any of them changed pricing or shipped something big since?",
+    "expectedSearch": true,
+    "expectedComparison": true
+  },
+  {
+    "id": "historical-recall",
+    "category": "intent",
+    "question": "What did I ask you on 3 November?",
+    "expectedHistoricalRecall": true
+  }
+]

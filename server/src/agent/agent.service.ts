@@ -13,7 +13,7 @@ import { searchWeb, type WebSearchResult } from "../research/web-search.js";
 import { classifyIntent } from "./intent.js";
 import { ollamaChat, type OllamaMessage } from "./ollama-client.js";
 import { formatMemoryContext, SYSTEM_PROMPT } from "./prompts.js";
-import { planSearchQuery } from "./search-planner.js";
+import { planSearchQueries, planSearchQuery } from "./search-planner.js";
 
 const searchArgumentsSchema = z.object({
   query: z.string().min(2).max(300)
@@ -196,28 +196,53 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
     response = await ollamaChat(messages, toolRounds < 2 ? [webSearchTool] : []);
   }
 
-  // Carry names from retrieved history into fallback searches when the user refers to them indirectly.
-  if (intent.shouldSearch && sources.length === 0) {
-    try {
-      const fallbackQuery = planSearchQuery(input.content, memory);
-      const fallbackResults = await searchWeb(fallbackQuery);
-      sources.push(...fallbackResults);
-      messages.push({
-        role: "system",
-        content: "The backend executed web_search because this request needs current information. " +
-          "Use these results as evidence and cite them by number:\n\n" +
-          renderSearchContext(deduplicateSources(sources))
-      });
-      response = await ollamaChat(messages, []);
-    } catch (error) {
-      messages.push({
-        role: "system",
-        content: "Web search was attempted but is currently unavailable: " +
-          (error instanceof Error ? error.message : "unknown error") +
-          ". Do not claim the answer is current or verified."
-      });
-      response = await ollamaChat(messages, []);
+  // Always cover a recovered shortlist entity-by-entity during a current comparison.
+  // Otherwise use one deterministic fallback query if the model skipped the tool.
+  const plannedQueries = planSearchQueries(input.content, memory);
+  const shouldRunEntitySweep = intent.comparison && memory.length > 0 && plannedQueries.length > 1;
+  const shouldRunFallback = intent.shouldSearch && sources.length === 0;
+  const queriesToRun = shouldRunEntitySweep
+    ? plannedQueries.slice(0, 5)
+    : shouldRunFallback
+      ? [planSearchQuery(input.content, memory)]
+      : [];
+
+  const searchFailures: string[] = [];
+  let executedFallback = false;
+  for (let index = 0; index < queriesToRun.length; index += 2) {
+    const batch = queriesToRun.slice(index, index + 2);
+    const outcomes = await Promise.all(batch.map(async (query) => {
+      try {
+        return { query, results: await searchWeb(query, 4) };
+      } catch (error) {
+        return {
+          query,
+          error: error instanceof Error ? error.message : "Search failed."
+        };
+      }
+    }));
+
+    for (const outcome of outcomes) {
+      if ("results" in outcome) {
+        sources.push(...outcome.results);
+        executedFallback = true;
+      } else {
+        searchFailures.push(outcome.query + ": " + outcome.error);
+      }
     }
+  }
+
+  if (queriesToRun.length > 0) {
+    const uniqueSources = deduplicateSources(sources);
+    const evidence = uniqueSources.length > 0
+      ? "FINAL SEARCH EVIDENCE. Use this numbered source list for all citations; do not reuse numbering from earlier tool messages:\n\n" +
+        renderSearchContext(uniqueSources)
+      : "Web search was attempted but no usable source was returned. " +
+        searchFailures.join("\n") +
+        "\nDo not claim the answer is current or verified.";
+
+    messages.push({ role: "system", content: evidence });
+    response = await ollamaChat(messages, []);
   }
 
   const answer = response.message.content?.trim()

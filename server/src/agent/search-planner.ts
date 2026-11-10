@@ -10,29 +10,51 @@ const IGNORED_NAMES = new Set([
 
 const RESEARCH_TERMS = /\b(pricing|prices?|plans?|features?|releases?|changelog|updates?|shipped|changed?|hosting|database|sales|cloud|CRM|(?:PostgreSQL|Postgres))\b/gi;
 
-/**
- * Build a minimal search query from entities in relevant shortlist messages
- * and the research attributes in the current question. This avoids sending
- * whole historical messages to the public search provider on fallback paths.
- */
-export function planSearchQuery(
-  question: string,
-  memory: Array<{ content: string }>
-): string {
+function extractEntities(memory: Array<{ content: string }>): string[] {
   const relevantHistory = memory
     .filter((message) => CONTEXT_TERMS.test(message.content))
     .map((message) => message.content)
     .join(" ");
 
   const names = relevantHistory.match(CANDIDATE_PATTERN) ?? [];
-  const entities = [...new Set(names)]
+  return [...new Set(names)]
     .filter((name) => !IGNORED_NAMES.has(name))
-    .slice(0, 8);
+    .slice(0, 5);
+}
 
-  const attributes = question.match(RESEARCH_TERMS) ?? [];
+/**
+ * Build a compact query for a single search call. This is also used when the
+ * local model declines to invoke its web_search tool.
+ */
+export function planSearchQuery(
+  question: string,
+  memory: Array<{ content: string }>
+): string {
+  const entities = extractEntities(memory);
+  const attributes = [...new Set(question.match(RESEARCH_TERMS) ?? [])];
   const query = [...new Set([...entities, ...attributes])]
     .join(" ")
     .slice(0, 300);
 
   return query.length >= 2 ? query : question.trim().slice(0, 300);
+}
+
+/**
+ * A single broad result page often misses some members of a shortlist.
+ * For comparisons, search each recovered entity separately. The caller caps
+ * the number of calls and batches them to avoid flooding a public search page.
+ */
+export function planSearchQueries(
+  question: string,
+  memory: Array<{ content: string }>
+): string[] {
+  const entities = extractEntities(memory);
+  const attributes = [...new Set(question.match(RESEARCH_TERMS) ?? [])];
+  if (entities.length <= 1 || attributes.length === 0) {
+    return [planSearchQuery(question, memory)];
+  }
+
+  return entities.map((entity) =>
+    (entity + " " + attributes.join(" ")).slice(0, 300)
+  );
 }

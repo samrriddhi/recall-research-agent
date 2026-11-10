@@ -13,7 +13,8 @@
     "dev:client": "vite --config client/vite.config.ts",
     "build": "tsc -p server/tsconfig.json && tsc -p client/tsconfig.json && vite build --config client/vite.config.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "evaluate": "tsx scripts/evaluate.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",

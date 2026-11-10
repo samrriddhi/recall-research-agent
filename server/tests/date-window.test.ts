@@ -35,6 +35,26 @@ describe("resolveDateWindow", () => {
     expect(result?.to).toBe("2026-11-10T18:30:00.000Z");
   });
 
+  it("resolves last Tuesday to the previous Tuesday", () => {
+    const result = resolveDateWindow(
+      "Last Tuesday I asked about Postgres hosting.",
+      referenceTime,
+      "Asia/Kolkata"
+    );
+    expect(result?.from).toBe("2026-11-02T18:30:00.000Z");
+    expect(result?.to).toBe("2026-11-03T18:30:00.000Z");
+  });
+
+  it("resolves a weekday reference to the most recent past weekday", () => {
+    const result = resolveDateWindow(
+      "On Monday we shortlisted five CRM tools.",
+      referenceTime,
+      "Asia/Kolkata"
+    );
+    expect(result?.from).toBe("2026-11-08T18:30:00.000Z");
+    expect(result?.to).toBe("2026-11-09T18:30:00.000Z");
+  });
+
   it("returns undefined when no date is present", () => {
     expect(resolveDateWindow(
       "Tell me about PostgreSQL hosting",
