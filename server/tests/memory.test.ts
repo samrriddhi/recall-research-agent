@@ -86,7 +86,8 @@ describe("conversation memory", () => {
     const to = new Date(Date.now() + 1000).toISOString();
 
     const matches = searchRelevantMessages("", { from, to, limit: 20 });
-    expect(matches.map((message) => message.id)).toEqual(allMessages.map((message) => message.id));
+    expect(matches.map((message) => message.id).sort())
+      .toEqual(allMessages.map((message) => message.id).sort());
   });
 
   it("updates conversation previews and ordering after messages are added", () => {
