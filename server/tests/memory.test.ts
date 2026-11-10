@@ -27,13 +27,21 @@ describe("conversation memory", () => {
       [{
         title: "Neon pricing",
         url: "https://neon.com/pricing",
-        snippet: "Plan and usage details."
+        snippet: "Plan and usage details.",
+        content: "The Pro plan price changed on November 7, 2026.",
+        publishedAt: "2026-11-05T12:00:00.000Z",
+        modifiedAt: "2026-11-09T12:00:00.000Z",
+        fetchStatus: "fetched"
       }]
     );
 
     const messages = getConversationMessages(conversation.id);
     expect(messages).toHaveLength(2);
     expect(messages[1]?.sources[0]?.url).toBe("https://neon.com/pricing");
+    expect(messages[1]?.sources[0]?.content).toContain("price changed");
+    expect(messages[1]?.sources[0]?.publishedAt).toBe("2026-11-05T12:00:00.000Z");
+    expect(messages[1]?.sources[0]?.modifiedAt).toBe("2026-11-09T12:00:00.000Z");
+    expect(messages[1]?.sources[0]?.fetchStatus).toBe("fetched");
   });
 
   it("finds relevant messages across conversations using FTS", () => {
