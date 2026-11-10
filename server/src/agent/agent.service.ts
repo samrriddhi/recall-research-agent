@@ -109,7 +109,7 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
     : input.content;
 
   const refersToUnresolvedContext =
-    /\\b(any of them|them|those|these|the ones|those tools|the shortlist|that shortlist|the providers|same tools|same providers)\\b/i.test(input.content);
+    /\b(any of them|them|those|these|the ones|those tools|the shortlist|that shortlist|the providers|same tools|same providers)\b/i.test(input.content);
 
   let memory = searchRelevantMessages(memoryQuery, {
     from: dateWindow?.from,

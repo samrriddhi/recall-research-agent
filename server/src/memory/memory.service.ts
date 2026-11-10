@@ -179,7 +179,7 @@ export function getRecentShortlistContext(
   conversationLimit = 2,
   messagesPerConversation = 8
 ): MessageRecord[] {
-  const expression = buildFtsExpression("shortlist shortlisted shortlisting short-list");
+  const expression = buildFtsExpression("shortlist shortlisted shortlisting");
   if (!expression) return [];
 
   const conversations = db.prepare(`
