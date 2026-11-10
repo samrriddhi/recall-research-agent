@@ -1,11 +1,16 @@
 import { load } from "cheerio";
 import { env } from "../config/env.js";
+import { fetchPageEvidence } from "./page-fetcher.js";
 
 export interface WebSearchResult {
   title: string;
   url: string;
   snippet: string;
   source: "DuckDuckGo HTML" | "DuckDuckGo Lite";
+  content?: string;
+  publishedAt?: string;
+  modifiedAt?: string;
+  fetchStatus?: "fetched" | "snippet-only";
 }
 
 const HEADERS = {
@@ -47,7 +52,7 @@ export function parseDuckDuckGoResults(
       if (!title || !href) return;
 
       const url = normalizeResultUrl(href, baseUrl);
-      if (url) results.push({ title, url, snippet, source });
+      if (url) results.push({ title, url, snippet, source, fetchStatus: "snippet-only" });
     });
   } else {
     $("a.result-link").each((_, element) => {
@@ -58,7 +63,7 @@ export function parseDuckDuckGoResults(
       if (!title || !href) return;
 
       const url = normalizeResultUrl(href, baseUrl);
-      if (url) results.push({ title, url, snippet, source });
+      if (url) results.push({ title, url, snippet, source, fetchStatus: "snippet-only" });
     });
   }
 
@@ -88,14 +93,38 @@ async function requestHtml(url: string): Promise<string> {
   return html;
 }
 
+async function enrichResults(
+  results: WebSearchResult[],
+  pageCount: number
+): Promise<WebSearchResult[]> {
+  return Promise.all(results.map(async (result, index) => {
+    if (index >= pageCount) return result;
+    try {
+      const evidence = await fetchPageEvidence(result.url);
+      return {
+        ...result,
+        title: evidence.title || result.title,
+        content: evidence.content || undefined,
+        publishedAt: evidence.publishedAt,
+        modifiedAt: evidence.modifiedAt,
+        fetchStatus: evidence.content ? "fetched" as const : "snippet-only" as const
+      };
+    } catch {
+      // Search snippets still provide a fallback when a site blocks page reading.
+      return { ...result, fetchStatus: "snippet-only" as const };
+    }
+  }));
+}
+
 /**
  * Keyless web search. DuckDuckGo's HTML and Lite frontends are used in order.
- * They are public interfaces, not a contracted API, so callers must handle
- * temporary blocking and provider changes.
+ * The first few result pages are read with bounded requests so the agent can
+ * inspect primary-page text rather than relying only on search snippets.
  */
 export async function searchWeb(
   query: string,
-  maxResults = env.WEB_SEARCH_MAX_RESULTS
+  maxResults = env.WEB_SEARCH_MAX_RESULTS,
+  hydrateCount = 2
 ): Promise<WebSearchResult[]> {
   const normalizedQuery = query.trim().slice(0, 300);
   if (normalizedQuery.length < 2) {
@@ -118,7 +147,10 @@ export async function searchWeb(
     try {
       const html = await requestHtml(attempt.url);
       const parsed = parseDuckDuckGoResults(html, attempt.url, attempt.source);
-      if (parsed.length > 0) return parsed.slice(0, Math.min(maxResults, 10));
+      if (parsed.length > 0) {
+        const boundedResults = parsed.slice(0, Math.min(maxResults, 10));
+        return enrichResults(boundedResults, Math.min(hydrateCount, boundedResults.length));
+      }
       failures.push(attempt.source + ": no parseable results");
     } catch (error) {
       failures.push(
