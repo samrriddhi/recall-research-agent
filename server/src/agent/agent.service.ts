@@ -81,8 +81,23 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
 
   const userMessage = addMessage(conversation.id, "user", input.content);
   const intent = classifyIntent(input.content);
-  const timeZone = input.timeZone ?? env.APP_TIMEZONE;
-  const dateWindow = resolveDateWindow(input.content, input.referenceTime, timeZone);
+  const requestedTimeZone = input.timeZone ?? env.APP_TIMEZONE;
+  let timeZone = env.APP_TIMEZONE;
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: requestedTimeZone });
+    timeZone = requestedTimeZone;
+  } catch {
+    // Ignore invalid client-supplied IANA names and use the configured default.
+  }
+  const referenceInstant = input.referenceTime
+    ? new Date(input.referenceTime)
+    : new Date();
+  const currentLocalDateTime = new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone
+  }).format(referenceInstant);
+  const dateWindow = resolveDateWindow(input.content, referenceInstant.toISOString(), timeZone);
 
   const memoryQuery = dateWindow
     ? input.content.replace(dateWindow.matchedText, "")
@@ -117,6 +132,7 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
   const systemContext = [
     SYSTEM_PROMPT,
     "",
+    "CURRENT LOCAL DATE AND TIME: " + currentLocalDateTime + " (" + timeZone + ").",
     "RELEVANT LONG-TERM CONVERSATION MEMORY:",
     formatMemoryContext(memory),
     dateWindow

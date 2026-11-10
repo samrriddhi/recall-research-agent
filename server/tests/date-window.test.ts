@@ -15,6 +15,26 @@ describe("resolveDateWindow", () => {
     expect(result?.to).toBe("2026-11-03T18:30:00.000Z");
   });
 
+  it("does not treat a verification-time reference as the historical conversation date", () => {
+    const result = resolveDateWindow(
+      "Does your previous answer on Postgres hosting still hold today?",
+      referenceTime,
+      "Asia/Kolkata"
+    );
+    expect(result).toBeUndefined();
+  });
+
+  it("still resolves today when the user asks what they discussed today", () => {
+    const result = resolveDateWindow(
+      "What did I ask you today?",
+      referenceTime,
+      "Asia/Kolkata"
+    );
+    expect(result).toBeDefined();
+    expect(result?.from).toBe("2026-11-10T18:30:00.000Z");
+    expect(result?.to).toBe("2026-11-11T18:30:00.000Z");
+  });
+
   it("returns undefined when no date is present", () => {
     expect(resolveDateWindow(
       "Tell me about PostgreSQL hosting",

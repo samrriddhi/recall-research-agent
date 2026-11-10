@@ -63,7 +63,13 @@ export function resolveDateWindow(
     matches = chrono.parse(query, reference, { forwardDate: false });
   }
 
-  const match = matches.find((item) => item.start.isCertain("day"));
+  const isHistoricalRecall = /\\b(what did (i|we) (ask|discuss|talk about)|previous (answer|conversation|discussion)|earlier (answer|conversation)|asked you|we discussed|we shortlisted|we compared|i mentioned)\\b/i.test(query);
+  const match = matches.find((item) => {
+    if (!item.start.isCertain("day")) return false;
+    // "today" usually anchors current verification, not the old conversation.
+    if (item.text.toLowerCase() === "today" && !isHistoricalRecall) return false;
+    return true;
+  });
   if (!match) return undefined;
 
   const parsedDate = match.start.date();
