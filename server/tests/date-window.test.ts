@@ -31,8 +31,8 @@ describe("resolveDateWindow", () => {
       "Asia/Kolkata"
     );
     expect(result).toBeDefined();
-    expect(result?.from).toBe("2026-11-10T18:30:00.000Z");
-    expect(result?.to).toBe("2026-11-11T18:30:00.000Z");
+    expect(result?.from).toBe("2026-11-09T18:30:00.000Z");
+    expect(result?.to).toBe("2026-11-10T18:30:00.000Z");
   });
 
   it("returns undefined when no date is present", () => {
