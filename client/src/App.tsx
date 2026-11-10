@@ -167,7 +167,7 @@ function App() {
           conversationId,
           content,
           referenceTime: new Date().toISOString(),
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
         })
       });
       const result = await readJson<{

@@ -133,7 +133,7 @@ function buildFtsExpression(query: string): string {
     "what", "when", "where", "which", "about", "have", "that", "this",
     "with", "from", "were", "there", "them", "they", "then", "than",
     "does", "did", "has", "had", "would", "could", "should", "your",
-    "you", "our", "last", "asked", "tell", "today", "since", "still",
+    "you", "our", "last", "ask", "asked", "tell", "today", "since", "still",
     "on", "the", "and", "for"
   ]);
   const terms = [...new Set(

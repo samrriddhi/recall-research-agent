@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { env } from "../config/env.js";
 import {
   addMessage,
   createConversation,
@@ -79,11 +80,8 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
 
   const userMessage = addMessage(conversation.id, "user", input.content);
   const intent = classifyIntent(input.content);
-  const dateWindow = resolveDateWindow(
-    input.content,
-    input.referenceTime,
-    input.timeZone ?? "UTC"
-  );
+  const timeZone = input.timeZone ?? env.APP_TIMEZONE;
+  const dateWindow = resolveDateWindow(input.content, input.referenceTime, timeZone);
 
   const memoryQuery = dateWindow
     ? input.content.replace(dateWindow.matchedText, "")
@@ -92,8 +90,18 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
   let memory = searchRelevantMessages(memoryQuery, {
     from: dateWindow?.from,
     to: dateWindow?.to,
-    limit: dateWindow ? 16 : 8
+    limit: dateWindow ? 24 : 8
   }).filter((item) => item.id !== userMessage.id);
+
+  // If the wording of the question does not lexically match the old message,
+  // keep the date boundary but retrieve that day's conversation as a fallback.
+  if (dateWindow && memory.length === 0) {
+    memory = searchRelevantMessages("", {
+      from: dateWindow.from,
+      to: dateWindow.to,
+      limit: 24
+    }).filter((item) => item.id !== userMessage.id);
+  }
 
   if (intent.historicalRecall && memory.length === 0 && !dateWindow) {
     memory = getRecentHistory(12).filter((item) => item.id !== userMessage.id);
@@ -112,7 +120,8 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
     formatMemoryContext(memory),
     dateWindow
       ? "\nThe user's date reference \"" + dateWindow.matchedText +
-        "\" resolved to " + dateWindow.from + " through (exclusive) " + dateWindow.to + "."
+        "\" resolved to " + dateWindow.from + " through (exclusive) " + dateWindow.to +
+        " in timezone " + timeZone + "."
       : ""
   ].join("\n");
 
@@ -155,7 +164,7 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
         messages.push({
           role: "tool",
           tool_name: "web_search",
-          content: renderSearchContext(results)
+          content: renderSearchContext(deduplicateSources(sources))
         });
       } catch (error) {
         messages.push({
@@ -170,8 +179,7 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
     response = await ollamaChat(messages, toolRounds < 2 ? [webSearchTool] : []);
   }
 
-  // A deterministic fallback ensures current-information requests do not
-  // silently skip search when a small local model declines to call the tool.
+  // Do not let a small local model silently skip search on current questions.
   if (intent.shouldSearch && sources.length === 0) {
     try {
       const fallbackResults = await searchWeb(input.content);
@@ -180,7 +188,7 @@ export async function runChat(input: ChatInput): Promise<ChatOutput> {
         role: "system",
         content: "The backend executed web_search because this request needs current information. " +
           "Use these results as evidence and cite them by number:\n\n" +
-          renderSearchContext(fallbackResults)
+          renderSearchContext(deduplicateSources(sources))
       });
       response = await ollamaChat(messages, []);
     } catch (error) {

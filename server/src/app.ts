@@ -7,7 +7,9 @@ import { healthRouter } from "./routes/health.routes.js";
 export const app = express();
 
 app.disable("x-powered-by");
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(cors({
+  origin: ["http://localhost:5173", "http://127.0.0.1:5173"]
+}));
 app.use(express.json({ limit: "1mb" }));
 
 app.use("/api/health", healthRouter);
