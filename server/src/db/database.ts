@@ -3,8 +3,9 @@ import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { env } from "../config/env.js";
 
-const databasePath = resolve(process.cwd(), env.DATABASE_PATH);
-mkdirSync(dirname(databasePath), { recursive: true });
+const inMemory = env.DATABASE_PATH === ":memory:";
+const databasePath = inMemory ? ":memory:" : resolve(process.cwd(), env.DATABASE_PATH);
+if (!inMemory) mkdirSync(dirname(databasePath), { recursive: true });
 
 export const db = new Database(databasePath);
 db.pragma("journal_mode = WAL");
@@ -55,4 +56,6 @@ db.exec(`
   END;
 `);
 
+// Rebuild at startup to recover an FTS index if the database was upgraded
+// from an earlier schema version or the index was interrupted by a crash.
 db.exec("INSERT INTO messages_fts(messages_fts) VALUES ('rebuild')");

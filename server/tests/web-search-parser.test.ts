@@ -17,4 +17,12 @@ describe("parseDuckDuckGoResults", () => {
     const results = parseDuckDuckGoResults(html, "https://html.duckduckgo.com/html/", "DuckDuckGo HTML");
     expect(results[0]?.url).toBe("https://example.com/docs");
   });
+
+  it("drops non-HTTP and search-provider links", () => {
+    const html = '<div class="result"><a class="result__a" href="javascript:alert(1)">Unsafe</a></div>' +
+      '<div class="result"><a class="result__a" href="https://duckduckgo.com/about">Internal</a></div>' +
+      '<div class="result"><a class="result__a" href="https://example.com/valid">Valid result</a></div>';
+    const results = parseDuckDuckGoResults(html, "https://html.duckduckgo.com/html/", "DuckDuckGo HTML");
+    expect(results.map((result) => result.url)).toEqual(["https://example.com/valid"]);
+  });
 });
