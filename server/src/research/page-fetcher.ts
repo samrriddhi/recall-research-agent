@@ -22,7 +22,7 @@ const PAGE_HEADERS = {
 function unsafeIpv4(address: string): boolean {
   const parts = address.split(".").map(Number);
   if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return true;
-  const [a, b, c] = parts;
+  const [a = 0, b = 0, c = 0] = parts;
   return a === 0 || a === 10 || a === 127
     || (a === 100 && b >= 64 && b <= 127)
     || (a === 169 && b === 254)
