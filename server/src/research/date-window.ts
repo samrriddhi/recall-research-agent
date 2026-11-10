@@ -63,15 +63,15 @@ export function resolveDateWindow(
     matches = chrono.parse(query, reference, { forwardDate: false });
   }
 
-  const isHistoricalRecall = /\\bwhat did (i|we) (ask|discuss|talk about)\\b/i.test(query)
-    || /\\b(conversation|discussion|chat|messages?) (from|on|during) today\\b/i.test(query);
+  const isHistoricalRecall = /\bwhat did (i|we) (ask|discuss|talk about)\b/i.test(query)
+    || /\b(conversation|discussion|chat|messages?) (from|on|during) today\b/i.test(query);
   const match = matches.find((item) => {
     // "today" usually anchors current verification, not the old conversation.
     if (item.text.toLowerCase() === "today") return isHistoricalRecall;
     return item.start.isCertain("day");
   });
 
-  if (!match && isHistoricalRecall && /\\btoday\\b/i.test(query)) {
+  if (!match && isHistoricalRecall && /\btoday\b/i.test(query)) {
     const todayParts = new Intl.DateTimeFormat("en-US", {
       timeZone,
       year: "numeric",
