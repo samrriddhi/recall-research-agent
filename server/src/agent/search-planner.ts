@@ -8,7 +8,7 @@ const IGNORED_NAMES = new Set([
   "October", "Team", "Tools", "Providers", "Vendors", "CRM"
 ]);
 
-const RESEARCH_TERMS = /\b(pricing|prices?|plans?|features?|releases?|changelog|updates?|shipped|changed?|hosting|database|sales|cloud|CRM|Postgres(?:SQL)?)\b/gi;
+const RESEARCH_TERMS = /\b(pricing|prices?|plans?|features?|releases?|changelog|updates?|shipped|changed?|hosting|database|sales|cloud|CRM|(?:PostgreSQL|Postgres))\b/gi;
 
 /**
  * Build a minimal search query from entities in relevant shortlist messages
