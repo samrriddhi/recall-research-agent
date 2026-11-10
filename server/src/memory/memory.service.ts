@@ -9,6 +9,8 @@ export interface SourceRecord {
   publishedAt?: string;
   modifiedAt?: string;
   fetchStatus?: "fetched" | "snippet-only";
+  provider?: string;
+  searchQuery?: string;
 }
 
 export interface MessageRecord {
@@ -38,10 +40,12 @@ const insertMessage = db.prepare(`
 `);
 const insertSource = db.prepare(`
   INSERT INTO message_sources (
-    message_id, title, url, snippet, content, published_at, modified_at, fetch_status, retrieved_at
+    message_id, title, url, snippet, content, published_at, modified_at,
+    fetch_status, source_provider, search_query, retrieved_at
   )
   VALUES (
-    @messageId, @title, @url, @snippet, @content, @publishedAt, @modifiedAt, @fetchStatus, @retrievedAt
+    @messageId, @title, @url, @snippet, @content, @publishedAt, @modifiedAt,
+    @fetchStatus, @provider, @searchQuery, @retrievedAt
   )
 `);
 
@@ -89,6 +93,8 @@ export function addMessage(
         publishedAt: source.publishedAt ?? null,
         modifiedAt: source.modifiedAt ?? null,
         fetchStatus: source.fetchStatus ?? "snippet-only",
+        provider: source.provider ?? null,
+        searchQuery: source.searchQuery ?? null,
         retrievedAt: createdAt
       });
     }
@@ -105,7 +111,9 @@ function mapMessage(row: DbMessage): MessageRecord {
       title, url, snippet, content,
       published_at AS publishedAt,
       modified_at AS modifiedAt,
-      fetch_status AS fetchStatus
+      fetch_status AS fetchStatus,
+      source_provider AS provider,
+      search_query AS searchQuery
     FROM message_sources
     WHERE message_id = ? ORDER BY id
   `).all(row.id) as SourceRecord[];

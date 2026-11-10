@@ -31,7 +31,9 @@ describe("conversation memory", () => {
         content: "The Pro plan price changed on November 7, 2026.",
         publishedAt: "2026-11-05T12:00:00.000Z",
         modifiedAt: "2026-11-09T12:00:00.000Z",
-        fetchStatus: "fetched"
+        fetchStatus: "fetched",
+        provider: "DuckDuckGo HTML",
+        searchQuery: "Neon pricing November 2026"
       }]
     );
 
@@ -42,6 +44,8 @@ describe("conversation memory", () => {
     expect(messages[1]?.sources[0]?.publishedAt).toBe("2026-11-05T12:00:00.000Z");
     expect(messages[1]?.sources[0]?.modifiedAt).toBe("2026-11-09T12:00:00.000Z");
     expect(messages[1]?.sources[0]?.fetchStatus).toBe("fetched");
+    expect(messages[1]?.sources[0]?.provider).toBe("DuckDuckGo HTML");
+    expect(messages[1]?.sources[0]?.searchQuery).toBe("Neon pricing November 2026");
   });
 
   it("finds relevant messages across conversations using FTS", () => {

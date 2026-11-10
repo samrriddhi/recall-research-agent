@@ -57,7 +57,6 @@ Ollama must be running in the background. If it is not running, start it with: o
 | npm run dev | Start API and UI |
 | npm run build | Type-check and build both applications |
 | npm test | Run automated tests |
-| npm run evaluate | Run deterministic recall, date and search-planning checks |
 | npm run evaluate | Run deterministic recall, date and search-planning evaluation |
 
 ## Cost and privacy

@@ -22,19 +22,52 @@ export function formatMemoryContext(
     role: string;
     content: string;
     createdAt: string;
-    sources?: Array<{ title: string; url: string }>;
+    sources?: Array<{
+      title: string;
+      url: string;
+      snippet?: string;
+      content?: string;
+      publishedAt?: string;
+      modifiedAt?: string;
+      fetchStatus?: "fetched" | "snippet-only";
+      provider?: string;
+      searchQuery?: string;
+    }>;
   }>
 ): string {
   if (matches.length === 0) {
     return "No relevant earlier conversation messages were found in Recall's local history.";
   }
 
-  return matches.map((message, index) => {
-    const sourceText = message.sources?.length
-      ? "\nSources attached to that message: " +
-        message.sources.map((source) => source.title + " (" + source.url + ")").join("; ")
-      : "";
-    return "[Memory " + (index + 1) + " | " + message.createdAt + " | " +
-      message.role + "]\n" + message.content + sourceText;
-  }).join("\n\n");
+  // Keep retrieved evidence inside a predictable prompt budget. Historical
+  // page text is more valuable than replaying entire old conversations.
+  const MAX_CONTEXT_CHARS = 8_000;
+  const MAX_MESSAGE_CHARS = 1_000;
+  const MAX_SOURCE_TEXT_CHARS = 900;
+  const sections: string[] = [];
+  let usedChars = 0;
+
+  for (const message of matches.slice(0, 20)) {
+    const messageText = "[Memory | " + message.createdAt + " | " + message.role + "]\n"
+      + message.content.slice(0, MAX_MESSAGE_CHARS);
+    const sourceLines = (message.sources ?? []).slice(0, 2).map((source) => {
+      const evidenceText = source.content?.trim() || source.snippet || "";
+      return [
+        "Historical source: " + source.title,
+        "URL: " + source.url,
+        source.provider ? "Search provider: " + source.provider : "",
+        source.searchQuery ? "Original search query: " + source.searchQuery : "",
+        source.fetchStatus ? "Evidence type: " + source.fetchStatus : "",
+        source.publishedAt ? "Published metadata: " + source.publishedAt : "",
+        source.modifiedAt ? "Modified metadata: " + source.modifiedAt : "",
+        evidenceText ? "Stored source snapshot/snippet: " + evidenceText.slice(0, MAX_SOURCE_TEXT_CHARS) : ""
+      ].filter(Boolean).join("\n");
+    });
+    const section = messageText + (sourceLines.length ? "\n" + sourceLines.join("\n") : "");
+    if (usedChars + section.length > MAX_CONTEXT_CHARS) break;
+    sections.push(section);
+    usedChars += section.length + 2;
+  }
+
+  return sections.join("\n\n");
 }

@@ -11,6 +11,7 @@ export interface WebSearchResult {
   publishedAt?: string;
   modifiedAt?: string;
   fetchStatus?: "fetched" | "snippet-only";
+  searchQuery?: string;
 }
 
 const HEADERS = {
@@ -129,7 +130,8 @@ export async function searchWeb(
       const parsed = parseDuckDuckGoResults(html, attempt.url, attempt.source);
       if (parsed.length > 0) {
         const bounded = parsed.slice(0, Math.min(maxResults, 10));
-        return enrichResults(bounded, Math.min(hydrateCount, bounded.length));
+        const enriched = await enrichResults(bounded, Math.min(hydrateCount, bounded.length));
+        return enriched.map((result) => ({ ...result, searchQuery: normalizedQuery }));
       }
       failures.push(attempt.source + ": no parseable results");
     } catch (error) {

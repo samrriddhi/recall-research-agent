@@ -38,6 +38,8 @@ db.exec(`
     published_at TEXT,
     modified_at TEXT,
     fetch_status TEXT NOT NULL DEFAULT 'snippet-only',
+    source_provider TEXT,
+    search_query TEXT,
     retrieved_at TEXT NOT NULL
   );
 
@@ -77,6 +79,12 @@ if (!sourceColumns.has("modified_at")) {
 }
 if (!sourceColumns.has("fetch_status")) {
   db.exec("ALTER TABLE message_sources ADD COLUMN fetch_status TEXT NOT NULL DEFAULT 'snippet-only'");
+}
+if (!sourceColumns.has("source_provider")) {
+  db.exec("ALTER TABLE message_sources ADD COLUMN source_provider TEXT");
+}
+if (!sourceColumns.has("search_query")) {
+  db.exec("ALTER TABLE message_sources ADD COLUMN search_query TEXT");
 }
 
 // Rebuild at startup to recover an FTS index if the database was upgraded

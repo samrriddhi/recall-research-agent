@@ -67,13 +67,14 @@ function deduplicateSources(sources: WebSearchResult[]): WebSearchResult[] {
 
 function renderSearchContext(sources: WebSearchResult[]): string {
   if (sources.length === 0) return "The web search returned no usable sources.";
-  return sources.slice(0, 8).map((source, index) =>
+  return sources.map((source, index) =>
     "[" + (index + 1) + "] " + source.title +
     "\nURL: " + source.url +
     "\nSnippet: " + source.snippet +
+    (source.searchQuery ? "\nSearch query: " + source.searchQuery : "") +
     (source.publishedAt ? "\nPublished: " + source.publishedAt : "") +
     (source.modifiedAt ? "\nPage modified: " + source.modifiedAt : "") +
-    (source.content ? "\nPage text:\n" + source.content.slice(0, 2500) : "")
+    (source.content ? "\nPage text:\n" + source.content.slice(0, 1000) : "")
   ).join("\n\n");
 }
 
