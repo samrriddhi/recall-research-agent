@@ -59,6 +59,18 @@ Ollama must be running in the background. If it is not running, start it with: o
 | npm test | Run automated tests |
 | npm run evaluate | Run deterministic recall, date and search-planning evaluation |
 
+## Architecture and date semantics
+
+See [DESIGN.md](DESIGN.md) for the system diagram and component responsibilities. Recall resolves relative and explicit dates in the user's IANA timezone, then searches conversation history with a half-open UTC window: `[from, to)`. The end is the next local midnight, never the end of the previous UTC day.
+
+## SSRF protections
+
+Public source fetching validates URLs and DNS results before requests and revalidates every redirect. It blocks localhost, private, reserved and link-local destinations, credentials, nonstandard ports and unsafe literal or resolved IP addresses. Redirects, HTML size, response body size, request timeouts and extracted text length are bounded.
+
+## Evaluation criteria
+
+`npm test` covers unit and HTTP integration behavior. `npm run evaluate` runs deterministic recall, date-resolution, intent and search-planning cases. A passing result should demonstrate timezone-correct `[from, to)` date windows, bounded per-entity shortlist searches, useful retrieval and no generic vendor-name leakage. Local-model prose quality, live source availability and historical completeness require separate manual evaluation.
+
 ## Cost and privacy
 
 - Model inference happens on your machine.

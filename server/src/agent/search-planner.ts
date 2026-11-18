@@ -5,7 +5,9 @@ const IGNORED_NAMES = new Set([
   "Last", "On", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
   "Saturday", "Sunday", "November", "December", "January", "February",
   "March", "April", "May", "June", "July", "August", "September",
-  "October", "Team", "Tools", "Providers", "Vendors", "CRM"
+  "October", "Team", "Tools", "Providers", "Vendors", "CRM",
+  "Here", "Based", "Free Tier", "Pro Plan", "Pricing", "Postgres",
+  "PostgreSQL", "Summary", "Option", "Note"
 ]);
 
 const RESEARCH_TERMS = /\b(pricing|prices?|plans?|features?|releases?|changelog|updates?|shipped|changed?|hosting|database|sales|cloud|CRM|(?:PostgreSQL|Postgres))\b/gi;
@@ -19,6 +21,7 @@ function extractEntities(memory: Array<{ content: string }>): string[] {
   const names = relevantHistory.match(CANDIDATE_PATTERN) ?? [];
   return [...new Set(names)]
     .filter((name) => !IGNORED_NAMES.has(name))
+    .filter((name) => !IGNORED_NAMES.has(name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()))
     .slice(0, 5);
 }
 

@@ -38,7 +38,8 @@ export async function ollamaChat(
         tools,
         stream: false,
         think: false,
-        options: { temperature: 0.2, num_ctx: 8192 }
+        keep_alive: "30m",
+        options: { temperature: 0.15, num_ctx: 4096 }
       })
     });
   } catch (error) {
@@ -57,5 +58,11 @@ export async function ollamaChat(
 
   const payload = await response.json() as OllamaChatResponse;
   if (!payload.message) throw new Error("Ollama returned an invalid chat response.");
+  if (payload.message.content) {
+    payload.message.content = payload.message.content
+      .replace(/<think>[\s\S]*?<\/think>/gi, "")
+      .replace(/^\s*<think>[\s\S]*$/i, "")
+      .trim();
+  }
   return payload;
 }

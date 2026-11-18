@@ -23,6 +23,7 @@ type ChatMessage = {
   content: string;
   createdAt: string;
   sources: Source[];
+  memoryMatches?: number;
 };
 type Conversation = {
   id: string;
@@ -38,9 +39,9 @@ type Health = {
 };
 
 const suggestions = [
-  { icon: Clock3, title: "Recall a conversation", prompt: "What did I ask you in our previous conversations?" },
-  { icon: Globe2, title: "Check what changed", prompt: "What are the latest changes in PostgreSQL?" },
-  { icon: Search, title: "Research a decision", prompt: "Compare the current free tiers of Neon and Supabase." }
+  { icon: Clock3, title: "Recall a conversation", prompt: "What did I ask you on 3 November?" },
+  { icon: Globe2, title: "Check what changed", prompt: "Last Tuesday I asked you about Postgres hosting. Has any pricing changed since?" },
+  { icon: Search, title: "Research a decision", prompt: "On Monday we shortlisted five CRM tools. Has any of them changed pricing or released something significant?" }
 ];
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -207,12 +208,13 @@ function App() {
         conversationId: string;
         userMessage: ChatMessage;
         message: ChatMessage;
+        memoryMatches: number;
       }>(response);
 
       setMessages((current) => [
         ...current.filter((message) => message.id !== optimisticId),
         result.userMessage,
-        result.message
+        { ...result.message, memoryMatches: result.memoryMatches }
       ]);
       setActiveId(result.conversationId);
       await refreshConversations();
@@ -331,6 +333,9 @@ function App() {
                       <div className="message-meta">
                         <strong>{message.role === "assistant" ? "Recall" : "You"}</strong>
                         <span>{new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(message.createdAt))}</span>
+                        {message.role === "assistant" && (message.memoryMatches ?? 0) > 0 && (
+                          <span>{message.memoryMatches} memory match{message.memoryMatches === 1 ? "" : "es"}</span>
+                        )}
                       </div>
                       <div className="message-content">
                         {message.role === "assistant"

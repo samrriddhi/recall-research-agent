@@ -6,6 +6,18 @@ The challenge is not ordinary text generation. The agent must retrieve what was 
 
 ## Architecture
 
+```mermaid
+flowchart LR
+  UI[React + Vite] --> API[Express API]
+  API --> DB[(SQLite + FTS5)]
+  API --> Intent[Intent + date resolver]
+  Intent --> Agent[Agent orchestrator]
+  Agent --> Ollama[Ollama / Qwen3 4B]
+  Agent --> Search[DuckDuckGo search]
+  Search --> Fetch[Public source pages]
+  Agent --> DB
+```
+
 Recall is a local-first TypeScript application. React handles chat and history. Express exposes a narrow HTTP API. SQLite stores conversations, messages and source snapshots attached to assistant responses. FTS5 retrieves relevant prior messages; explicit dates are resolved before retrieval so "on 3 November" narrows the search to that day.
 
 The agent orchestrator classifies the request, retrieves historical context, resolves calendar dates in the user's IANA timezone, and calls a local Ollama model. The model has one callable tool: web_search. A deterministic fallback invokes the same tool when a request clearly asks for current information but the small model declines to call it. For follow-ups about a previous shortlist, a bounded query planner issues separate searches for recovered entities. The final synthesis receives a single stable, numbered evidence list so citations map to the displayed sources.
@@ -16,6 +28,14 @@ The agent orchestrator classifies the request, retrieves historical context, res
 - SQLite + FTS5: no database service to operate. Exact terms and date filters are an inspectable baseline for the challenge examples.
 - One search tool: the model has a deliberately small tool surface. The backend owns persistence and retrieval; only web search is exposed as an agent tool.
 - Evidence-led comparison: the model must distinguish changed, apparently unchanged and unverified. A recent snippet is not proof of a historical change.
+
+## Date-window semantics
+
+Date references resolve in the caller's IANA timezone. Each local calendar date becomes a half-open UTC interval, `[from, to)`, where `from` is local midnight converted to UTC and `to` is the following local midnight converted to UTC. This prevents a timezone-shifted message from leaking into the adjacent day and ensures stored ISO timestamps are queried with a bounded upper exclusive endpoint.
+
+## SSRF protections
+
+Source fetching allows only HTTP(S) URLs without credentials or nonstandard ports. It rejects localhost, reserved-name and private-network hosts, literal private IP addresses and DNS results that contain any unsafe address. Redirect targets are checked again, with a three-hop limit. Responses are size-limited, use bounded read and request timeouts, require HTML content and extract only a small amount of text. These controls reduce but do not eliminate all SSRF and public-network abuse risks.
 
 ## Search and evidence limitations
 
@@ -31,7 +51,9 @@ The no-key search adapter parses DuckDuckGo's public HTML and Lite pages. These 
 
 ## Evaluation
 
-The CI pipeline runs unit and HTTP integration tests, a deterministic evaluation dataset for date resolution, intent classification and shortlist query planning, a dependency audit, and a production build. These checks do not claim to measure local-model answer quality. Live evaluation remains manual and should cover historical recall, missing baselines, plan/billing/region mismatches, conflicting sources and search outages. Track date-window accuracy, retrieval recall, per-entity search coverage, citation coverage and unsupported-claim rate.
+The CI pipeline requires passing unit and HTTP integration tests, deterministic date-resolution and evaluation cases, search-planner and intent checks, a dependency audit and a production build. Evaluation success means: date windows are timezone-correct and half-open; historical recall distinguishes exact and fuzzy matches; shortlist entities are recovered per vendor without generic-name leakage; search calls remain bounded; and cited sources correspond to returned evidence.
+
+The criteria do not claim to measure local-model answer quality. Live evaluation remains manual and should cover historical recall, missing baselines, plan/billing/region mismatches, conflicting sources and search outages. Track date-window accuracy, retrieval recall, per-entity search coverage, citation coverage and unsupported-claim rate.
 
 ## With another week
 
